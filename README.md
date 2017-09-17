@@ -37,6 +37,7 @@ Features:
 
 -Delta Pruning at Qsearch
 
+
 Evaluation based on Fruit 2.1
 
 Thanks Fabien Letouzey for the great source code of the program Fruit 2.1.
