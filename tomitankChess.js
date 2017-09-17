@@ -1,5 +1,5 @@
 /*
-* TanKy Chess v.1.4.0 by tomitank
+* tomitankChess v.1.4.0 by tomitank
 * Date:2017.09.18.
 * Contact:tomitank@freemail.hu , tanky.hu@gmail.com
 * https://github.com/tomitank/tomitankChess
