@@ -12,6 +12,7 @@ Usage:
 Features:
 ------------------
 - Pawn bitboard with 32 bit integers (http://talkchess.com/forum/viewtopic.php?t=65198)
+- Hash 28MB
 - PVS, fail-low
 - IID
 - LMR
