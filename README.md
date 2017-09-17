@@ -40,4 +40,4 @@ TODO:
 
 Have fun with tomitankChess!
 
-- Tamas Kuzmics
+Tamas Kuzmics
