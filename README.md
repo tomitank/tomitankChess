@@ -27,7 +27,9 @@ Features:
 Thanks:
 ------------------
 - Thanks Fabien Letouzey for the great source code of the program Fruit 2.1.
-- Thanks Colin Jenkins for the UCI interface code.
+- Thanks Colin Jenkins (Lozza author) for the UCI interface code.
+- Thanks Stockfish authors
+- Thanks VICE author
 
 Estimated level:
 ------------------
