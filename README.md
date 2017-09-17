@@ -1,4 +1,4 @@
-tomitankChess is pure JavaScript Engine
+tomitankChess is pure JavaScript Chess Engine
 -----------------------------------------
 - No Emscripten, no V8 optimization: unlike stockfish-js
 - tomitankChess use node.js for UCI protokol.
