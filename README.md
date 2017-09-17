@@ -35,7 +35,7 @@ Thanks:
 
 Estimated level:
 ------------------
-- Lozza 1.7 or better. (Around 2400 elo)
+- Lozza 1.7 or better. (Around 2400-2500 elo)
 
 TODO:
 ------------------
