@@ -30,6 +30,8 @@ Thanks:
 - Thanks Colin Jenkins (Lozza author) for the UCI interface code.
 - Thanks Stockfish authors
 - Thanks VICE author
+- http://talkchess.com
+- https://chessprogramming.wikispaces.com/
 
 Estimated level:
 ------------------
