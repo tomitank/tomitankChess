@@ -4,9 +4,10 @@ Hungarian JavaScript Chess Engine
 -tomitankChess is pure JavaScript Engine /relative slow/.
 -No Emscripten, no V8 optimization: unlike stockfish-js
 -tomitankChess use node.js for UCI protokol.
--Usage: Arena GUI with node.js 
-  Comand line: direct acces to node.exe (C:\Program Files\nodejs\node.exe)
-  Command line parameters: direct acces to tomitankChess.js (C:\Program Files\nodejs\tomitankChessUCI.js)
+
+-Usage: Arena GUI with node.js
+Comand line: direct acces to node.exe (C:\Program Files\nodejs\node.exe)
+Command line parameters: direct acces to tomitankChess.js (C:\Program Files\nodejs\tomitankChessUCI.js)
 
 Features:
 -Pawn bitboard with 32 bit integers (http://talkchess.com/forum/viewtopic.php?t=65198)
