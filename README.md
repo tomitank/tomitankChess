@@ -13,16 +13,27 @@ Comand line: direct acces to node.exe (C:\Program Files\nodejs\node.exe)
 Command line parameters: direct acces to tomitankChess.js (C:\Program Files\nodejs\tomitankChessUCI.js)
 
 Features:
+
 -Pawn bitboard with 32 bit integers (http://talkchess.com/forum/viewtopic.php?t=65198)
+
 -PVS, fail-low
+
 -IID
+
 -LMR
+
 -LMP
+
 -Razoring
+
 -Futility Pruning
+
 -Null Move Pruning
+
 -Static null move pruning
+
 -See pruning at Qsearch
+
 -Delta Pruning at Qsearch
 
 Evaluation based on Fruit 2.1
