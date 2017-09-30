@@ -22,7 +22,6 @@
 // TODO!
 // - Pawn Eval Hash
 // - Use TT at depth == 0
-
 // - Tune Search algorithm
 
 // Have fun with tomitankChess!
