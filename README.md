@@ -28,7 +28,8 @@ Features:
 Thanks:
 ------------------
 - Thanks Fabien Letouzey for the great source code of the program Fruit 2.1.
-- Thanks Colin Jenkins (Lozza author) for the UCI interface code.
+- Thanks again Colin Jenkins (Lozza author) for the great source code.
+- Thanks Gary Linscott for the garbochess source code
 - Thanks Stockfish authors
 - Thanks VICE author
 - http://talkchess.com
@@ -36,11 +37,19 @@ Thanks:
 
 Estimated level:
 ------------------
-- Lozza 1.7 or better. (Around 2400-2500 elo)
+- ~2500 elo
+- CCRL: http://www.computerchess.org.uk/ccrl/404/cgi/engine_details.cgi?print=Details&each_game=1&eng=tomitankChess%201.4.0%2064-bit#tomitankChess_1_4_0_64-bit
+
+Links:
+------------------
+- Web: http://tanky.hu or http://mobil.tanky.hu
+- Android app: https://play.google.com/store/apps/details?id=sakk.tanky.hu
+- iOS app: https://itunes.apple.com/us/app/sakk-ingyenes/id1150654415?l=hu&ls=1&mt=8
 
 TODO:
 ------------------
 - Pawn Eval Hash
+- Use TT at depth == 0
 - Tune Search algorithm
 
 Have fun with tomitankChess!
