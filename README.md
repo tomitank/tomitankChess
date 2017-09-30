@@ -37,7 +37,7 @@ Thanks:
 
 Estimated level:
 ------------------
-- ~2500 elo
+- ~2500 elo (Strongest JavaScript Chess Engine /2017.09.30/)
 - CCRL: http://www.computerchess.org.uk/ccrl/404/cgi/engine_details.cgi?print=Details&each_game=1&eng=tomitankChess%201.4.0%2064-bit#tomitankChess_1_4_0_64-bit
 
 Links:
