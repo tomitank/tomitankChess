@@ -3827,10 +3827,6 @@ var CHESS_BOARD		= [	BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLACK_
 								InitHashKeys();
 							}
 
-							START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR '+(currentPlayer ? 'b' : 'w')+' KQkq - 0 0';
-
-							CHESS_BOARD = FENToBoard(); // Tabla feltoltese
-
 						break;
 
 						// ############################################################################################
