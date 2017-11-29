@@ -12,7 +12,7 @@ Usage:
 Version 1.5 (Last Mailbox Version):
 ------------------
 - Tuned Search algorithm (Futility Pruning, Static Null Move, Delta Pruning)
-- All new UI interface code (now working with JSUCI as well) + Some bug-fix
+- New UI interface code (now working with JSUCI as well) + Some bug-fix
 
 Features:
 ------------------
