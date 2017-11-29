@@ -9,13 +9,12 @@ Usage:
 - Comand line: direct acces to node.exe (C:\Program Files\nodejs\node.exe)
 - Command line parameters: direct acces to tomitankChess.js (C:\Program Files\nodejs\tomitankChessUCI.js)
 
-New:
+Version 1.5 (Last Mailbox Version):
 ------------------
-- version 1.5: (Little Bit Stronger then v1.4)
-+ Tuned Static null move
-+ Tuned Delta prunin at Qsearch
-+ All new UI interface code (now working with JSUCI as well)
-+ Some bug-fix
+- Tuned Static null move
+- Tuned Delta prunin at Qsearch
+- All new UI interface code (now working with JSUCI as well)
+- Some bug-fix
 
 Features:
 ------------------
