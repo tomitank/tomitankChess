@@ -5,7 +5,7 @@
 * [^:]// .* regular search->comment del
 */
 
-// - Thanks Fabien Letouzey for the great source code of the program Fruit 2.1. 
+// - Thanks Fabien Letouzey for the great source code of the program Fruit 2.1.
 // - Thanks again Colin Jenkins (Lozza author) for the great source code.
 // - Thanks Gary Linscott for the garbochess source code
 // - Thanks Stockfish authors
