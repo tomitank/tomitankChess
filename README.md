@@ -13,8 +13,7 @@ Version 1.5 (Last Mailbox Version):
 ------------------
 - Tuned Static null move
 - Tuned Delta prunin at Qsearch
-- All new UI interface code (now working with JSUCI as well)
-- Some bug-fix
+- All new UI interface code (now working with JSUCI as well) + Some bug-fix
 
 Features:
 ------------------
