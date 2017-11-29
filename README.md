@@ -11,9 +11,7 @@ Usage:
 
 Version 1.5 (Last Mailbox Version):
 ------------------
-- Tuned Static null move
-- Tuned Futility Pruning
-- Tuned Delta Pruning at Qsearch
+- Tuned Search algorithm (Futility Pruning, Static Null Move, Delta Pruning)
 - All new UI interface code (now working with JSUCI as well) + Some bug-fix
 
 Features:
