@@ -3177,10 +3177,6 @@ var CHESS_BOARD		= [	BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLACK_
 				}
 			}
 
-			/*if (Check && (is_pv || moveScore >= 1000)) { // Sakk kiterjesztes
-				E = 1;
-			}*/
-
 			if (inCheck && (is_pv || depth < 5)) { // Sakk kiterjesztes
 				E = 1;
 			}
