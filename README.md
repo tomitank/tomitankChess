@@ -9,6 +9,14 @@ Usage:
 - Comand line: direct acces to node.exe (C:\Program Files\nodejs\node.exe)
 - Command line parameters: direct acces to tomitankChess.js (C:\Program Files\nodejs\tomitankChessUCI.js)
 
+New:
+------------------
+- version 1.5: (Little Bit Stronger then v1.4)
++ Tuned Static null move
++ Tuned Delta prunin at Qsearch
++ All new UI interface code (now working with JSUCI as well)
++ Some bug-fix
+
 Features:
 ------------------
 - Pawn bitboard with 32 bit integers (http://talkchess.com/forum/viewtopic.php?t=65198)
@@ -50,7 +58,6 @@ TODO:
 ------------------
 - Pawn Eval Hash
 - Use TT at depth == 0
-- Tune Search algorithm
 
 Have fun with tomitankChess!
 
