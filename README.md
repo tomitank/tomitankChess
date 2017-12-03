@@ -20,6 +20,11 @@ Version 1.5 (Probably the Last Mailbox Version):
 - Tuned Search algorithm
 - Use TT at depth == 0
 
+Estimated level:
+------------------
+- v.1.5: ~2540 elo (Strongest JavaScript Chess Engine /2017.12.03/)
+- v.1.4: ~2500 elo (Strongest JavaScript Chess Engine /2017.09.30/)
+
 Features:
 ------------------
 - Pawn bitboard with 32 bit integers (http://talkchess.com/forum/viewtopic.php?t=65198)
@@ -45,11 +50,6 @@ Thanks:
 - Thanks VICE author
 - http://talkchess.com
 - https://chessprogramming.wikispaces.com/
-
-Estimated level:
-------------------
-- v.1.5: ~2540 elo (Strongest JavaScript Chess Engine /2017.12.03/)
-- v.1.4: ~2500 elo (Strongest JavaScript Chess Engine /2017.09.30/)
 
 Links:
 ------------------
