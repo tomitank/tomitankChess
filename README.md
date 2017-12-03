@@ -11,7 +11,7 @@ Usage:
 
 Version 1.5 (Probably the Last Mailbox Version):
 ------------------
-- New UI interface code (now working with JSUCI as well) + Some bug-fix
+- New UI interface code (now working with JSUCI as well)
 - Tuned Search algorithm
 - Use TT at depth == 0
 
