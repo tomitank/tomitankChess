@@ -9,10 +9,10 @@ Usage:
 - Comand line: direct acces to node.exe (C:\Program Files\nodejs\node.exe)
 - Command line parameters: direct acces to tomitankChess.js (C:\Program Files\nodejs\tomitankChessUCI.js)
 - Web browser: tomitankChess runing with and without WebWorker. (Recommended: WebWorker)
-  var tomitankChess = new Worker('tomitankChess.js');
-  Input (standard UCI commands) to the engine is posted as a message to the worker: 
-  Eg: tomitankChess.postMessage('ucinewgame');
-  Eg: tomitankChess.postMessage('go depth 12');
+  + var tomitankChess = new Worker('tomitankChess.js');
+  + Input (standard UCI commands) to the engine is posted as a message to the worker: 
+  + Eg: tomitankChess.postMessage('ucinewgame');
+  + Eg: tomitankChess.postMessage('go depth 12');
 
 Version 1.5 (Probably the Last Mailbox Version):
 ------------------
