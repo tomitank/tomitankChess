@@ -9,10 +9,11 @@ Usage:
 - Comand line: direct acces to node.exe (C:\Program Files\nodejs\node.exe)
 - Command line parameters: direct acces to tomitankChess.js (C:\Program Files\nodejs\tomitankChessUCI.js)
 
-Version 1.5 (Last Mailbox Version):
+Version 1.5 (Probably the Last Mailbox Version):
 ------------------
 - Tuned Search algorithm (Futility Pruning, Static Null Move, Delta Pruning)
 - New UI interface code (now working with JSUCI as well) + Some bug-fix
+- Use TT at depth == 0
 
 Features:
 ------------------
@@ -42,8 +43,8 @@ Thanks:
 
 Estimated level:
 ------------------
-- ~2500 elo (Strongest JavaScript Chess Engine /2017.09.30/)
-- CCRL: http://www.computerchess.org.uk/ccrl/4040/cgi/engine_details.cgi?print=Details&each_game=1&eng=tomitankChess%201.4%2064-bit#tomitankChess_1_4_64-bit
+- v.1.5: ~2540 elo (Strongest JavaScript Chess Engine /2017.12.03/)
+- v.1.4: ~2500 elo (Strongest JavaScript Chess Engine /2017.09.30/)
 
 Links:
 ------------------
@@ -54,7 +55,6 @@ Links:
 TODO:
 ------------------
 - Pawn Eval Hash
-- Use TT at depth == 0
 
 Have fun with tomitankChess!
 
