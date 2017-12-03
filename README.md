@@ -11,8 +11,8 @@ Usage:
 
 Version 1.5 (Probably the Last Mailbox Version):
 ------------------
-- Tuned Search algorithm (Futility Pruning, Static Null Move, Delta Pruning)
 - New UI interface code (now working with JSUCI as well) + Some bug-fix
+- Tuned Search algorithm
 - Use TT at depth == 0
 
 Features:
