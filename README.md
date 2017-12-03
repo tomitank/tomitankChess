@@ -6,8 +6,8 @@ tomitankChess is (pure) Hungarian JavaScript Chess Engine
 Usage:
 ------------------
 - Arena GUI with node.js
-- Comand line: direct acces to node.exe (C:\Program Files\nodejs\node.exe)
-- Command line parameters: direct acces to tomitankChess.js (C:\Program Files\nodejs\tomitankChessUCI.js)
+  + Comand line: direct acces to node.exe (C:\Program Files\nodejs\node.exe)
+  + Command line parameters: direct acces to tomitankChess.js (C:\Program Files\nodejs\tomitankChessUCI.js)
 
 - Web browser: tomitankChess runing with and without WebWorker as well. (Recommended: WebWorker)
   + Input (standard UCI commands) to the engine is posted as a message to the worker. Example:
