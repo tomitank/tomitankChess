@@ -1,4 +1,4 @@
-﻿/*
+/*
 * tomitankChess v.1.5 by tomitank
 * Date:2017.12.03.
 * Contact:tomitank@freemail.hu , tanky.hu@gmail.com
@@ -356,36 +356,36 @@ var CHESS_BOARD		= [	BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLACK_
 		return ((b + (b >>> 4) & 0x0F0F0F0F) * 0x01010101) >>> 24;
 	}
 
-	function SetBitBoard(SQ, BITBOARD) {
-		PawnBitBoard[BITBOARD|HighSQMask[SQ]] |= SetMask[SQ];
+	function SetBitBoard(sq, color) {
+		PawnBitBoard[color | HighSQMask[sq]] |= SetMask[sq];
 	}
 
-	function ClearBitBoard(SQ, BITBOARD) {
-		PawnBitBoard[BITBOARD|HighSQMask[SQ]] &= ClearMask[SQ];
+	function ClearBitBoard(sq, color) {
+		PawnBitBoard[color | HighSQMask[sq]] &= ClearMask[sq];
 	}
 
-	function IsOpenFile(FILE, COLOR) {
-		return (FileBBMask[FILE] & PawnBitBoard[COLOR]) | (FileBBMask[FILE] & PawnBitBoard[COLOR|1]);
+	function IsOpenFile(file, color) {
+		return (FileBBMask[file] & PawnBitBoard[color]) | (FileBBMask[file] & PawnBitBoard[color|1]);
 	}
 
-	function IsolatedPawn(SQ, COLOR) {
-		return (IsolatedMask[SQ] & PawnBitBoard[COLOR]) | (IsolatedMask[SQ] & PawnBitBoard[COLOR|1]);
+	function IsolatedPawn(sq, color) {
+		return (IsolatedMask[sq] & PawnBitBoard[color]) | (IsolatedMask[sq] & PawnBitBoard[color|1]);
 	}
 
-	function WhiteCandidatePawn(SQ) {
+	function WhiteCandidatePawn(sq) {
 		var Black = 0;		// [W/B]Candidate Elottunk/Mogottunk van
 		var White = 0;		// CandidateMask Mellettunk van, ezert..
-		var SQ_1 = SQ + 16; // Kozvetlen vedo tarsakhoz LEFELE lepunk (CandidateMask)
-		var SQ_2 = SQ - 16; // Kozvetlen szomszed tarshoz (WCandidateMask), valamint
+		var sq_1 = sq + 16; // Kozvetlen vedo tarsakhoz LEFELE lepunk (CandidateMask)
+		var sq_2 = sq - 16; // Kozvetlen szomszed tarshoz (WCandidateMask), valamint
 							// Kozvetlen Tamadokhoz (CandidateMask) FELFELE lepunk
-		Black += PopCount(BCandidateMask[SQ] & PawnBitBoard[BLACK]);
-		Black += PopCount(BCandidateMask[BitFixHigh[SQ]] & PawnBitBoard[BLACK|1]);
-		White += PopCount(WCandidateMask[BitFixLow[SQ_2]] & PawnBitBoard[WHITE]);
-		White += PopCount(WCandidateMask[SQ_2] & PawnBitBoard[WHITE|1]);
+		Black += PopCount(BCandidateMask[sq] & PawnBitBoard[BLACK]);
+		Black += PopCount(BCandidateMask[BitFixHigh[sq]] & PawnBitBoard[BLACK|1]);
+		White += PopCount(WCandidateMask[BitFixLow[sq_2]] & PawnBitBoard[WHITE]);
+		White += PopCount(WCandidateMask[sq_2] & PawnBitBoard[WHITE|1]);
 
 		if (White >= Black) { // Tobbsegben vagyunk -> Jelenlegi tamadok/vedok szama kell
-			Black = PopCount(CandidateMask[SQ_2] & PawnBitBoard[BLACK|HighSQMask[SQ_2]]);
-			White = PopCount(CandidateMask[SQ_1] & PawnBitBoard[WHITE|HighSQMask[SQ_1]]);
+			Black = PopCount(CandidateMask[sq_2] & PawnBitBoard[BLACK|HighSQMask[sq_2]]);
+			White = PopCount(CandidateMask[sq_1] & PawnBitBoard[WHITE|HighSQMask[sq_1]]);
 			if (White >= Black) { // Gyoztunk
 				return true;
 			}
@@ -393,20 +393,20 @@ var CHESS_BOARD		= [	BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLACK_
 		return false;
 	}
 
-	function BlackCandidatePawn(SQ) {
+	function BlackCandidatePawn(sq) {
 		var Black = 0;		// [W/B]Candidate Elottunk/Mogottunk van
 		var White = 0;		// CandidateMask Mellettunk van, ezert..
-		var SQ_1 = SQ - 16; // Kozvetlen vedo tarsakhoz FELFELE lepunk (CandidateMask)
-		var SQ_2 = SQ + 16; // Kozvetlen szomszed tarshoz (BCandidateMask), valamint
+		var sq_1 = sq - 16; // Kozvetlen vedo tarsakhoz FELFELE lepunk (CandidateMask)
+		var sq_2 = sq + 16; // Kozvetlen szomszed tarshoz (BCandidateMask), valamint
 							// Kozvetlen Tamadokhoz (CandidateMask) LEFELE lepunk
-		Black += PopCount(BCandidateMask[SQ_2] & PawnBitBoard[BLACK]);
-		Black += PopCount(BCandidateMask[BitFixHigh[SQ_2]] & PawnBitBoard[BLACK|1]);
-		White += PopCount(WCandidateMask[BitFixLow[SQ]] & PawnBitBoard[WHITE]);
-		White += PopCount(WCandidateMask[SQ] & PawnBitBoard[WHITE|1]);
+		Black += PopCount(BCandidateMask[sq_2] & PawnBitBoard[BLACK]);
+		Black += PopCount(BCandidateMask[BitFixHigh[sq_2]] & PawnBitBoard[BLACK|1]);
+		White += PopCount(WCandidateMask[BitFixLow[sq]] & PawnBitBoard[WHITE]);
+		White += PopCount(WCandidateMask[sq] & PawnBitBoard[WHITE|1]);
 
 		if (Black >= White) { // Tobbsegben vagyunk -> Jelenlegi tamadok/vedok szama kell
-			Black = PopCount(CandidateMask[SQ_1] & PawnBitBoard[BLACK|HighSQMask[SQ_1]]);
-			White = PopCount(CandidateMask[SQ_2] & PawnBitBoard[WHITE|HighSQMask[SQ_2]]);
+			Black = PopCount(CandidateMask[sq_1] & PawnBitBoard[BLACK|HighSQMask[sq_1]]);
+			White = PopCount(CandidateMask[sq_2] & PawnBitBoard[WHITE|HighSQMask[sq_2]]);
 			if (Black >= White) { // Gyoztunk
 				return true;
 			}
@@ -414,82 +414,82 @@ var CHESS_BOARD		= [	BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLACK_
 		return false;
 	}
 
-	function WhiteBackwardControl(SQ, RANK) {
-		var SQ_1 = SQ - 16; // 1 sorral fentebb
-		var SQ_2 = SQ - 32; // 2 sorral fentebb
-		if ((CHESS_BOARD[SQ_1] & 0x07) !== PAWN // Elottem 1 mezovel nincs Gyalog
-		&& (CandidateMask[SQ_1] & PawnBitBoard[WHITE|HighSQMask[SQ_1]]) != 0 // 1 sorral fentebb mellettem van Feher Gyalog
-		&& ((CandidateMask[SQ_1] & PawnBitBoard[BLACK|HighSQMask[SQ_1]]) // Kulon-kulon vizsgalok also es felso 32 bitet! Osszekapcsolom "|" ==>
-		  | (CandidateMask[SQ_2] & PawnBitBoard[BLACK|HighSQMask[SQ_2]])) == 0) { // (1 | 2) sorral fentebb atlosan 1-1 mezot nezek! Nincs Fekete Gyalog
+	function WhiteBackwardControl(sq, rank) {
+		var sq_1 = sq - 16; // 1 sorral fentebb
+		var sq_2 = sq - 32; // 2 sorral fentebb
+		if ((CHESS_BOARD[sq_1] & 0x07) !== PAWN // Elottem 1 mezovel nincs Gyalog
+		&& ( CandidateMask[sq_1] & PawnBitBoard[WHITE|HighSQMask[sq_1]]) != 0 // 1 sorral fentebb mellettem van Feher Gyalog
+		&& ((CandidateMask[sq_1] & PawnBitBoard[BLACK|HighSQMask[sq_1]]) // Kulon-kulon vizsgalok also es felso 32 bitet! Osszekapcsolom "|" ==>
+		  | (CandidateMask[sq_2] & PawnBitBoard[BLACK|HighSQMask[sq_2]])) == 0) { // (1 | 2) sorral fentebb atlosan 1-1 mezot nezek! Nincs Fekete Gyalog
 			return false;
-		} else if (RANK == RANKS.RANK_2 // 2. Sorban also es felso 32 bitet meghatarozza
-				&& (CHESS_BOARD[SQ_1] & 0x07) !== PAWN // Elottem 1 mezovel nincs Gyalog
-				&& (CHESS_BOARD[SQ_2] & 0x07) !== PAWN // Elottem 2 mezovel nincs Gyalog
-				&& (CandidateMask[SQ_2] & PawnBitBoard[WHITE|1]) != 0 // 2 sorral fentebb mellettem van Feher Gyalog ("FELSO BIT")
-				&& ((CandidateMask[SQ_2-16] & PawnBitBoard[BLACK]) | (BCandidateMask[BitFixHigh[SQ]] & PawnBitBoard[BLACK|1])) == 0) { // Nincs Fekete Gyalog
-				// ((3 sorral fentebb atlosan 1-1 mezo "ALSO BIT") | (1-2 sorral fentebb atlosan 1-1 mezo "FELSO BIT")) (RANK == 2 miatt also vagy felso 32 bit)
-			return false;
-		}
-		return true;
-	}
-
-	function BlackBackwardControl(SQ, RANK) {
-		var SQ_1 = SQ + 16; // 1 sorral lentebb
-		var SQ_2 = SQ + 32; // 2 sorral lentebb
-		if ((CHESS_BOARD[SQ_1] & 0x07) !== PAWN // Elottem 1 mezovel nincs Gyalog
-		&& (CandidateMask[SQ_1] & PawnBitBoard[BLACK|HighSQMask[SQ_1]]) != 0 // 1 sorral lentebb mellettem van Fekete Gyalog
-		&& ((CandidateMask[SQ_1] & PawnBitBoard[WHITE|HighSQMask[SQ_1]]) // Kulon-kulon vizsgalok also es felso 32 bitet! Osszekapcsolom "|" ==>
-		  | (CandidateMask[SQ_2] & PawnBitBoard[WHITE|HighSQMask[SQ_2]])) == 0) { // (1 | 2) sorral lentebb atlosan 1-1 mezot nezek! Nincs Feher Gyalog
-			return false;
-		} else if (RANK == RANKS.RANK_7 // 7. Sorban also es felso 32 bitet meghatarozza
-				&& (CHESS_BOARD[SQ_1] & 0x07) !== PAWN // Elottem 1 mezovel nincs Gyalog
-				&& (CHESS_BOARD[SQ_2] & 0x07) !== PAWN // Elottem 2 mezovel nincs Gyalog
-				&& (CandidateMask[SQ_2] & PawnBitBoard[BLACK]) != 0 // 2 sorral lentebb mellettem van Fekete Gyalog ("ALSO BIT")
-				&& ((CandidateMask[SQ_2+16] & PawnBitBoard[WHITE|1]) | (WCandidateMask[BitFixLow[SQ]] & PawnBitBoard[WHITE])) == 0) { // Nincs Feher Gyalog
-				// ((3 sorral lentebb atlosan 1-1 mezo "FELSO BIT")  | (1-2 sorral lentebb atlosan 1-1 mezo "ALSO BIT")) (RANK == 7 miatt also vagy felso 32 bit)
+		} else if (rank == RANKS.RANK_2 // 2. Sorban also es felso 32 bitet meghatarozza
+			   && (CHESS_BOARD[sq_1] & 0x07) !== PAWN // Elottem 1 mezovel nincs Gyalog
+			   && (CHESS_BOARD[sq_2] & 0x07) !== PAWN // Elottem 2 mezovel nincs Gyalog
+			   && (CandidateMask[sq_2] & PawnBitBoard[WHITE|1]) != 0 // 2 sorral fentebb mellettem van Feher Gyalog ("FELSO BIT")
+			   && ((CandidateMask[sq_2-16] & PawnBitBoard[BLACK]) | (BCandidateMask[BitFixHigh[sq]] & PawnBitBoard[BLACK|1])) == 0) { // Nincs Fekete Gyalog
+			   // ((3 sorral fentebb atlosan 1-1 mezo "ALSO BIT") | (1-2 sorral fentebb atlosan 1-1 mezo "FELSO BIT")) (rank == 2 miatt also vagy felso 32 bit)
 			return false;
 		}
 		return true;
 	}
 
-	function WhiteBackwardPawn(SQ) {
-		SQ = SQ - 16; // Melletunk levo mezoket igy latjuk
-		return (WCandidateMask[BitFixLow[SQ]] & PawnBitBoard[WHITE]) | (WCandidateMask[SQ] & PawnBitBoard[WHITE|1]);
+	function BlackBackwardControl(sq, rank) {
+		var sq_1 = sq + 16; // 1 sorral lentebb
+		var sq_2 = sq + 32; // 2 sorral lentebb
+		if ((CHESS_BOARD[sq_1] & 0x07) !== PAWN // Elottem 1 mezovel nincs Gyalog
+		&& ( CandidateMask[sq_1] & PawnBitBoard[BLACK|HighSQMask[sq_1]]) != 0 // 1 sorral lentebb mellettem van Fekete Gyalog
+		&& ((CandidateMask[sq_1] & PawnBitBoard[WHITE|HighSQMask[sq_1]]) // Kulon-kulon vizsgalok also es felso 32 bitet! Osszekapcsolom "|" ==>
+		  | (CandidateMask[sq_2] & PawnBitBoard[WHITE|HighSQMask[sq_2]])) == 0) { // (1 | 2) sorral lentebb atlosan 1-1 mezot nezek! Nincs Feher Gyalog
+			return false;
+		} else if (rank == RANKS.RANK_7 // 7. Sorban also es felso 32 bitet meghatarozza
+			   && (CHESS_BOARD[sq_1] & 0x07) !== PAWN // Elottem 1 mezovel nincs Gyalog
+			   && (CHESS_BOARD[sq_2] & 0x07) !== PAWN // Elottem 2 mezovel nincs Gyalog
+			   && (CandidateMask[sq_2] & PawnBitBoard[BLACK]) != 0 // 2 sorral lentebb mellettem van Fekete Gyalog ("ALSO BIT")
+			   && ((CandidateMask[sq_2+16] & PawnBitBoard[WHITE|1]) | (WCandidateMask[BitFixLow[sq]] & PawnBitBoard[WHITE])) == 0) { // Nincs Feher Gyalog
+			   // ((3 sorral lentebb atlosan 1-1 mezo "FELSO BIT")  | (1-2 sorral lentebb atlosan 1-1 mezo "ALSO BIT")) (rank == 7 miatt also vagy felso 32 bit)
+			return false;
+		}
+		return true;
 	}
 
-	function BlackBackwardPawn(SQ) {
-		SQ = SQ + 16; // Melletunk levo mezoket igy latjuk
-		return (BCandidateMask[SQ] & PawnBitBoard[BLACK]) | (BCandidateMask[BitFixHigh[SQ]] & PawnBitBoard[BLACK|1]);
+	function WhiteBackwardPawn(sq) {
+		sq = sq - 16; // Melletunk levo mezoket igy latjuk
+		return (WCandidateMask[BitFixLow[sq]] & PawnBitBoard[WHITE]) | (WCandidateMask[sq] & PawnBitBoard[WHITE|1]);
 	}
 
-	function WhiteMostPawn(SQ) { // Legelso Feher Gyalog
-		return (WOpenFileMask[SQ] & PawnBitBoard[WHITE]) | (WOpenFileMask[BitFixHigh[SQ]] & PawnBitBoard[WHITE|1]);
+	function BlackBackwardPawn(sq) {
+		sq = sq + 16; // Melletunk levo mezoket igy latjuk
+		return (BCandidateMask[sq] & PawnBitBoard[BLACK]) | (BCandidateMask[BitFixHigh[sq]] & PawnBitBoard[BLACK|1]);
 	}
 
-	function BlackMostPawn(SQ) { // Legelso Fekete Gyalog
-		return (BOpenFileMask[BitFixLow[SQ]] & PawnBitBoard[BLACK]) | (BOpenFileMask[SQ] & PawnBitBoard[BLACK|1]);
+	function WhiteMostPawn(sq) { // Legelso Feher Gyalog
+		return (WOpenFileMask[sq] & PawnBitBoard[WHITE]) | (WOpenFileMask[BitFixHigh[sq]] & PawnBitBoard[WHITE|1]);
 	}
 
-	function WhiteOpenFile(SQ) { // Fekete Dupla Gyalog: WhiteOpenFile(SQ) != 0
-		return (WOpenFileMask[SQ] & PawnBitBoard[BLACK]) | (WOpenFileMask[BitFixHigh[SQ]] & PawnBitBoard[BLACK|1]);
+	function BlackMostPawn(sq) { // Legelso Fekete Gyalog
+		return (BOpenFileMask[BitFixLow[sq]] & PawnBitBoard[BLACK]) | (BOpenFileMask[sq] & PawnBitBoard[BLACK|1]);
 	}
 
-	function BlackOpenFile(SQ) { // Feher Dupla Gyalog: BlackOpenFile(SQ) != 0
-		return (BOpenFileMask[BitFixLow[SQ]] & PawnBitBoard[WHITE]) | (BOpenFileMask[SQ] & PawnBitBoard[WHITE|1]);
+	function WhiteOpenFile(sq) { // Fekete Dupla Gyalog: WhiteOpenFile(sq) != 0
+		return (WOpenFileMask[sq] & PawnBitBoard[BLACK]) | (WOpenFileMask[BitFixHigh[sq]] & PawnBitBoard[BLACK|1]);
 	}
 
-	function WhitePassedPawn(SQ) {
-		return (WhitePassedMask[SQ] & PawnBitBoard[BLACK]) | (WhitePassedMask[BitFixHigh[SQ]] & PawnBitBoard[BLACK|1]);
+	function BlackOpenFile(sq) { // Feher Dupla Gyalog: BlackOpenFile(sq) != 0
+		return (BOpenFileMask[BitFixLow[sq]] & PawnBitBoard[WHITE]) | (BOpenFileMask[sq] & PawnBitBoard[WHITE|1]);
 	}
 
-	function BlackPassedPawn(SQ) {
-		return (BlackPassedMask[BitFixLow[SQ]] & PawnBitBoard[WHITE]) | (BlackPassedMask[SQ] & PawnBitBoard[WHITE|1]);
+	function WhitePassedPawn(sq) {
+		return (WhitePassedMask[sq] & PawnBitBoard[BLACK]) | (WhitePassedMask[BitFixHigh[sq]] & PawnBitBoard[BLACK|1]);
 	}
 
-	function PawnPush(TO_SQ) { // makeMove (WHITE = BLACK)
-		return (CHESS_BOARD[TO_SQ] & 0x07) === PAWN && (currentPlayer === WHITE ?
-				 (TableRanks[TO_SQ] <= RANKS.RANK_3 && BlackPassedPawn(TO_SQ) == 0)
-				:(TableRanks[TO_SQ] >= RANKS.RANK_6 && WhitePassedPawn(TO_SQ) == 0));
+	function BlackPassedPawn(sq) {
+		return (BlackPassedMask[BitFixLow[sq]] & PawnBitBoard[WHITE]) | (BlackPassedMask[sq] & PawnBitBoard[WHITE|1]);
+	}
+
+	function PawnPush(to_sq) { // makeMove (WHITE = BLACK)
+		return (CHESS_BOARD[to_sq] & 0x07) === PAWN && (currentPlayer === WHITE ?
+				 (TableRanks[to_sq] <= RANKS.RANK_3 && BlackPassedPawn(to_sq) == 0)
+				:(TableRanks[to_sq] >= RANKS.RANK_6 && WhitePassedPawn(to_sq) == 0));
 	}
 
 	function PawnOnSeventh() {
@@ -758,44 +758,44 @@ var CHESS_BOARD		= [	BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLACK_
 	function TOSQ(m) { return ((m >> 7) & 0x7F); } // Ahova lepunk
 	function PROMOTED(m) { return ((m >> 15) & 0xF); } // Gyalog bevaltas
 	function HASH_SIDE() {
-		brd_hashKeyLow ^= SideKeyLow; // Aki lephet hashKey
+		brd_hashKeyLow  ^= SideKeyLow; // Aki lephet hashKey
 		brd_hashKeyHigh ^= SideKeyHigh; // Aki lephet hashKey
 	}
-	function HASH_PCE(PCE, SQ) {
-		brd_hashKeyLow ^= PieceKeysLow[PCE][SQ]; // Babu hashKey
-		brd_hashKeyHigh ^= PieceKeysHigh[PCE][SQ]; // Babu hashKey
+	function HASH_PCE(pce, sq) {
+		brd_hashKeyLow  ^= PieceKeysLow[pce][sq]; // Babu hashKey
+		brd_hashKeyHigh ^= PieceKeysHigh[pce][sq]; // Babu hashKey
 	}
 	function HASH_CA() {
-		brd_hashKeyLow ^= CastleKeysLow[castleRights]; // Sancolas hashKey
+		brd_hashKeyLow  ^= CastleKeysLow[castleRights]; // Sancolas hashKey
 		brd_hashKeyHigh ^= CastleKeysHigh[castleRights]; // Sancolas hashKey
 	}
 	function HASH_EP() {
-		brd_hashKeyLow ^= PieceKeysLow[0][EN_PASSANT]; // En Passant hashKey
+		brd_hashKeyLow  ^= PieceKeysLow[0][EN_PASSANT]; // En Passant hashKey
 		brd_hashKeyHigh ^= PieceKeysHigh[0][EN_PASSANT]; // En Passant hashKey
 	}
-	function MOVE_PCE(PCE, FROM, TO) {
-		CHESS_BOARD[FROM] = 0; // Babu torlese
-		CHESS_BOARD[TO] = PCE; // Babu mozgatas
-		brd_pieceIndex[TO] = brd_pieceIndex[FROM];
-		brd_pieceList[(PCE << 4) | brd_pieceIndex[TO]] = TO;
+	function MOVE_PCE(pce, from, to) {
+		CHESS_BOARD[from] = 0; // Babu torlese
+		CHESS_BOARD[to] = pce; // Babu mozgatas
+		brd_pieceIndex[to] = brd_pieceIndex[from];
+		brd_pieceList[(pce << 4) | brd_pieceIndex[to]] = to;
 	}
-	function ADDING_PCE(PCE, SQ, currentPlayer) {
-		CHESS_BOARD[SQ] = PCE; // Babu hozzadasa
-		brd_pieceIndex[SQ] = brd_pieceCount[PCE];
-		brd_pieceList[(PCE << 4) | brd_pieceIndex[SQ]] = SQ;
-		brd_Material[currentPlayer] += PieceValue[PCE];
-		brd_pieceCount[PCE]++; // Babu szamanak novelese
-		if ((PCE & 0x07) === PAWN) SetBitBoard(SQ, currentPlayer);
+	function ADDING_PCE(pce, sq, currentPlayer) {
+		CHESS_BOARD[sq] = pce; // Babu hozzadasa
+		brd_pieceIndex[sq] = brd_pieceCount[pce];
+		brd_pieceList[(pce << 4) | brd_pieceIndex[sq]] = sq;
+		brd_Material[currentPlayer] += PieceValue[pce];
+		brd_pieceCount[pce]++; // Babu szamanak novelese
+		if ((pce & 0x07) === PAWN) SetBitBoard(sq, currentPlayer);
 	}
-	function DELETE_PCE(PCE, SQ, currentPlayer) {
-		CHESS_BOARD[SQ] = 0; // Babu torlese
-		brd_pieceCount[PCE]--; // Babu szamanak csokkentese
-		var lastPceSquare = brd_pieceList[(PCE << 4) | brd_pieceCount[PCE]];
-		brd_pieceIndex[lastPceSquare] = brd_pieceIndex[SQ];
-		brd_pieceList[(PCE << 4) | brd_pieceIndex[lastPceSquare]] = lastPceSquare;
-		brd_pieceList[(PCE << 4) | brd_pieceCount[PCE]] = EMPTY; // Ures
-		brd_Material[currentPlayer] -= PieceValue[PCE];
-		if ((PCE & 0x07) === PAWN) ClearBitBoard(SQ, currentPlayer);
+	function DELETE_PCE(pce, sq, currentPlayer) {
+		CHESS_BOARD[sq] = 0; // Babu torlese
+		brd_pieceCount[pce]--; // Babu szamanak csokkentese
+		var lastPceSquare = brd_pieceList[(pce << 4) | brd_pieceCount[pce]];
+		brd_pieceIndex[lastPceSquare] = brd_pieceIndex[sq];
+		brd_pieceList[(pce << 4) | brd_pieceIndex[lastPceSquare]] = lastPceSquare;
+		brd_pieceList[(pce << 4) | brd_pieceCount[pce]] = EMPTY; // Ures
+		brd_Material[currentPlayer] -= PieceValue[pce];
+		if ((pce & 0x07) === PAWN) ClearBitBoard(sq, currentPlayer);
 	}
 	function BIT_MOVE(from, to, captured, promoted, castled) {
 		return (from | (to << 7) | (captured << 14) | (promoted << 15) | (castled << 19)); // Lepes tarolasa 20 bit
@@ -987,11 +987,8 @@ var CHESS_BOARD		= [	BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLACK_
 		}
 		else if (move & CAPTURE_MASK) // En Passant Lepes visszavonasa
 		{
-			if (currentPlayer) {
-				ADDING_PCE(BLACK_PAWN, (EN_PASSANT + 16), currentPlayer); // Fekete Gyalog vissza
-			} else {
-				ADDING_PCE(WHITE_PAWN, (EN_PASSANT - 16), currentPlayer); // Feher Gyalog vissza
-			}
+			currentPlayer ? ADDING_PCE(BLACK_PAWN, (EN_PASSANT + 16), BLACK) // Fekete Gyalog vissza
+						  : ADDING_PCE(WHITE_PAWN, (EN_PASSANT - 16), WHITE); // Feher Gyalog vissza
 		}
 		else if (move & CASTLED_MASK) // Sancolas torlesekor a Bastya mozgatasa
 		{
@@ -1267,7 +1264,7 @@ var CHESS_BOARD		= [	BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLACK_
 		var bNumPawns	= brd_pieceCount[BLACK_PAWN];
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-	//											   DONTETLEN
+	//											 DONTETLEN
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 		if (wNumPawns == 0 && bNumPawns == 0) { // Nincs Gyalog
@@ -1351,7 +1348,7 @@ var CHESS_BOARD		= [	BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLACK_
 		var BCanAttack = bNumQueens && (bNumKnights || bNumBishops || bNumRooks || bNumQueens >= 2);
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-	//											   BABUK ERTEKELESE
+	//											 BABUK ERTEKELESE
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 	// Feher Kiraly
@@ -2196,8 +2193,7 @@ var CHESS_BOARD		= [	BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLACK_
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		// Ellenfel Gyalog Tamadas
-		// Ha egy ellenseges Gyalog letud utni!
+		// Ellenfel Gyalog Tamadas (letud utni!)
 		if ((CHESS_BOARD[to + inc + 1] === (them | PAWN))
 		 || (CHESS_BOARD[to + inc - 1] === (them | PAWN))) {
 			return false;
@@ -2241,7 +2237,6 @@ var CHESS_BOARD		= [	BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLACK_
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 		// Sajat Gyalog Vedelem
-		// Ha visszatudunk tamadni egy Gyaloggal!
 		if ((CHESS_BOARD[to - inc + 1] === (us | PAWN)) ||
 			(CHESS_BOARD[to - inc - 1] === (us | PAWN))) {
 			CHESS_BOARD[from] = fromPiece; // Babu vissza
