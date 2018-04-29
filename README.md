@@ -1,7 +1,8 @@
-tomitankChess is Hungarian Chess Engine written in pure JavaScript
+tomitankChess is Hungarian (pure) JavaScript Chess Engine
 ------------------------------------------------------------------
 - No Emscripten, no V8 optimization: unlike stockfish-js
 - tomitankChess use node.js for UCI protokol.
+- The Engine is running in your browser too.
 
 Usage:
 ------------------
