@@ -24,10 +24,10 @@ Version 1.5 (Probably the Last Mailbox Version):
 - Tuned Search algorithm
 - Use TT at depth == 0
 
-Estimated level:
+Estimated level (CCRL 40/40):
 ------------------
-- v.1.5: ~2540 elo (Strongest JavaScript Chess Engine /2017.12.03/)
-- v.1.4: ~2500 elo (Strongest JavaScript Chess Engine /2017.09.30/)
+- v.1.5: ~2590 elo (Strongest JavaScript Chess Engine /2017.12.03/)
+- v.1.4: ~2550 elo (Strongest JavaScript Chess Engine /2017.09.30/)
 
 Features:
 ------------------
