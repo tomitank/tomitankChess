@@ -1549,7 +1549,7 @@ var CHESS_BOARD		= [	BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLACK_
 
 		var hashMove = ProbeHashMove(); // Atultetesi tabla
 
-		if (hashMove != NOMOVE && hashMove.depth >= depth) {
+		if (hashMove != NOMOVE && hashMove.depth >= depth && boardPly != 0) {
 
 			var value = hashMove.score;
 
