@@ -132,7 +132,7 @@ var DANGER_MASK     = 0xFC000; // Fontos lepes maszk
 var CASTLED_MASK    = 0x80000; // Sancolas jelzo maszk
 var TACTICAL_MASK   = 0x7C000; // Utes, Bevaltas maszk
 var ISMATE          = INFINITE - 2 * maxDepth; // Matt
-var HASHENTRIES     = (28 << 20) / 14; // Hashtabla merete 28 MB / 1 Hash merete (14 Byte)
+var HASHENTRIES     = (96 << 20) / 48; // Hashtabla merete 96 MB / 1 Hash merete (48 byte)
 var HASHMASK        = HASHENTRIES - 1; // Hashtabla maszk, csak ketto hatvanya lehet & MASK
 var CASTLEBIT       = { WQCA : 1, WKCA : 2, BQCA : 4, BKCA : 8 }; // Sancolas ellenorzeshez
 var PawnShelter     = [ 36, 35, 32, 27, 20, 11, 0 ]; // Gyalog-Kiraly Pajzs (RANK_8, RANK_2)
@@ -710,7 +710,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			hashUsed++;
 		}
 
-		brd_HashTable[brd_hashKeyLow & HASHMASK] = new HashEntry(move, score, flags, depth, brd_hashKeyLow, brd_hashKeyHigh); // 108 bit /14 Byte/
+		brd_HashTable[brd_hashKeyLow & HASHMASK] = new HashEntry(move, score, flags, depth, brd_hashKeyLow, brd_hashKeyHigh); // 384 bit /48 byte/
 	}
 
 
@@ -718,12 +718,12 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 
 	function HashEntry(move, score, flags, depth, hashLow, hashHigh) { // Hash Objektum
-		this.move        = move; // 20 bit
-		this.flags       = flags; // 2 bit
-		this.depth       = depth; // 7 bit
-		this.score       = score; // 15 bit
-		this.hashKeyLow  = hashLow; // 32 bit
-		this.hashKeyHigh = hashHigh; // 32 bit
+		this.move        = move;
+		this.flags       = flags;
+		this.depth       = depth;
+		this.score       = score;
+		this.hashKeyLow  = hashLow;
+		this.hashKeyHigh = hashHigh; // A JavaScript-ben minden egesz szam 8 byte-ot foglal!
 	}
 
 
