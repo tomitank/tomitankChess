@@ -156,8 +156,8 @@ var RANKS           = { RANK_1 : 1, RANK_2 : 2, RANK_3 : 3, RANK_4 : 4, RANK_5 :
 var FILES           = { FILE_A : 1, FILE_B : 2, FILE_C : 3, FILE_D : 4, FILE_E : 5, FILE_F : 6, FILE_G : 7, FILE_H : 8 }; // Oszlopok
 
 // Gyalog bit tabla /BitBoard/
-var RankBBMask      = new Array(8); // Bitboard sor maszk
-var FileBBMask      = new Array(8); // Bitboard oszlop maszk
+var RankBBMask      = new Array(9); // Bitboard sor maszk
+var FileBBMask      = new Array(9); // Bitboard oszlop maszk
 var SetMask         = new Array(120); // Bitboard Mentes maszk
 var ClearMask       = new Array(120); // Bitboard Torles maszk
 var HighSQMask      = new Array(120); // Bitboard HighSQ maszk
