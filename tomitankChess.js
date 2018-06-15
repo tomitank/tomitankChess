@@ -661,8 +661,8 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		var move = ProbeHashMove();
 
 		while (move != NOMOVE && count < depth) {
-			makeMove(move.move);
 			brd_PvArray[count++] = move;
+			makeMove(move.move);
 			move = ProbeHashMove();
 		}
 
