@@ -18,7 +18,7 @@ Usage:
   
  - JSUCI: https://sourceforge.net/projects/jsuci/
 
-Version 1.5 (Probably the Last Mailbox Version):
+Version 1.5 (Last Mailbox Version):
 ------------------
 - New UI interface code (now working with JSUCI as well)
 - Tuned Search algorithm
