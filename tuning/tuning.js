@@ -205,7 +205,7 @@
 
 			var eval = tuning_evaluation(positions[i]);
 
-			if (good_tunning_value(eval) === true)  {
+			if (good_tuning_value(eval) === true)  {
 				used++;
 				total += Math.pow(results[i] - Sigmoid(K, eval), 2);
 			}
@@ -225,7 +225,7 @@
 
 			var eval = tuneEvals[i];
 
-			if (good_tunning_value(eval) === true)  {
+			if (good_tuning_value(eval) === true)  {
 				used++;
 				total += Math.pow(results[i] - Sigmoid(K, eval), 2);
 			}
@@ -242,7 +242,7 @@
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-	function good_tunning_value(value) {
+	function good_tuning_value(value) {
 		return value >= -600 && value <= 600;
 	}
 
