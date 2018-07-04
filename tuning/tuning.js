@@ -24,11 +24,11 @@
 	var positions = new Array();
 
 	var params = [
-		{ name : 'pawn',   value :  0 }, //   80
-		{ name : 'knight', value :  0 }, //  325
-		{ name : 'bishop', value :  0 }, //  325
+		{ name : 'queen',  value :  0 }, // 1000
 		{ name : 'rook',   value :  0 }, //  500
-		{ name : 'queen',  value :  0 }  // 1000
+		{ name : 'bishop', value :  0 }, //  325
+		{ name : 'knight', value :  0 }, //  325
+		{ name : 'pawn',   value :  0 }  //   80
 	];
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
