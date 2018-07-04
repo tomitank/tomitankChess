@@ -24,11 +24,11 @@
 	var positions = new Array();
 
 	var params = [
-		{ name : 'queen',  value :  0 }, // 1000
-		{ name : 'rook',   value :  0 }, //  500
-		{ name : 'bishop', value :  0 }, //  325
-		{ name : 'knight', value :  0 }, //  325
-		{ name : 'pawn',   value :  0 }  //   80
+	//	{ name : 'pawn',   value :   80 },
+		{ name : 'knight', value :  325 },
+		{ name : 'bishop', value :  325 },
+		{ name : 'rook',   value :  500 },
+		{ name : 'queen',  value : 1000 }
 	];
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -155,29 +155,19 @@
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-	function compute_optimal_k() { // by Andrew Grant
+	function compute_optimal_k() {
 
-		var start = -10.0, end = 10.0, delta = 1.0;
-		var curr = start, this_error = 0;
-		var best_error = total_eval_error(start);
+		var k = 0, best_error = 9999;
 
-		for (var i = 0; i < 10; i++) {
-			curr = start - delta;
-			while (curr < end) {
-				curr = curr + delta;
-				this_error = total_eval_error(curr);
-				if (this_error <= best_error) {
-					best_error = this_error;
-					start = curr;
-				}
+		for (var i = -1; i <= 2; i += 0.1) {
+			var this_error = total_eval_error(i);
+			if (this_error < best_error) {
+				best_error = this_error;
+				k = i;
 			}
-
-			end = start + delta;
-			start = start - delta;
-			delta = delta / 10.0;
 		}
 
-		return start;
+		return k;
 	}
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
