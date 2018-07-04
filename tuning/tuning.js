@@ -37,7 +37,7 @@
 		$.ajax({
 			cache : false,
 			mimeType: "text/plain",
-			url : "js/TUNING/fen_sf",
+			url : "js/TUNING/fen_zurich",
 			success: function (txt) {
 
 				positions = txt.split('\n');
@@ -54,8 +54,8 @@
 				for (var i = 0; i < numFens; i++) { // inicializalas..
 
 					var trimed = $.trim(positions[i]);
-					var result = trimed.substr(-2, 1);
-					results[i] = result == '1' ? 1 : result == '0' ? 0 : 0.5;
+					var result = trimed.substr(-5, 3);
+					results[i] = result == '1-0' ? 1 : result == '0-1' ? 0 : 0.5;
 
 					tuneEvals[i] = tuning_evaluation(positions[i]); // ertekeles..
 				}
@@ -75,7 +75,6 @@
 			}
 		});
 	});
-
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
