@@ -108,6 +108,8 @@
 					if (this_error < best_error) { // kisebb hiba
 						best_error = this_error;
 						improved = true;
+					} else {
+						params[i].value++; // eredeti ertek..
 					}
 				}
 
