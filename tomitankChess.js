@@ -1,4 +1,4 @@
-﻿/*
+/*
  tomitankChess 1.5 Copyright (C) 2017-2018 Tamás Kuzmics - tomitank
  Mail: tanky.hu@gmail.com
  Date: 2017.12.03.
@@ -125,7 +125,7 @@ var BishopMoves     = [ 15, -15, 17, -17 ]; // Futo lepesek
 var RookMoves       = [ 1, -1, 16, -16 ]; // Bastya lepesek
 var DirNum          = [ 0, 0, 8, 8, 0, 4, 4, 8 ]; // Lepesek szama babunkent
 var Letters         = [ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' ]; // Betuzes
-// ROVIDITES        =   0, P, N, K, 0, B, R, Q, 0, P, N, K, 0, B, R, Q
+var START_FEN       = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -';
 var MOB_W           = [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1 ]; // Ahova a feher lephet
 var MOB_B           = [ 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0 ]; // Ahova a fekete lephet
 var PieceDir        = [ 0, 0, KnightMoves, KingMoves, 0, BishopMoves, RookMoves, KingMoves ]; // Lepesek tomb
@@ -1250,7 +1250,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		var bNumPawns   = brd_pieceCount[BLACK_PAWN];
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-	//	                                 DONTETLEN
+	//	                                  DONTETLEN
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 		if (wNumPawns == 0 && bNumPawns == 0) { // Nincs Gyalog
@@ -1334,7 +1334,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		var bPawnHome = PawnBitBoard[BLACK]   & RankBBMask[RANKS.RANK_7]; // Fekete Gyalog 7. Sorban
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-	//	                                 BABUK ERTEKELESE
+	//	                                  BABUK ERTEKELESE
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 	// Feher Kiraly
@@ -3184,7 +3184,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		{
 			// console.log(inCheck ? 'MATT' : 'PATT');
 			// postMessage(['Redraw', CHESS_BOARD]);
-			// for (var index = 0; index < 100000000; index++);
+			// for (var index = 0; index < 1000000000; index++);
 
 			if (inCheck)
 			return -INFINITE + boardPly; // Matt
@@ -3513,30 +3513,30 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 						moveCount = 0; // Lepesszam nullazas
 						brd_fiftyMove = 0; // 50 lepes nullazas
 						MOVE_HISTORY = new Array(); // Lepes elozmenyek torlese
-						START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 0';
+						START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -';
 
-						var arr = getArr('fen', 'moves', tokens); // FEN Parameter
+						var arr = getArr('fen', 'moves', tokens); // FEN Parameterek
 
 						if (arr.lo > 0) {
 							if (arr.lo <= arr.hi) START_FEN  =     tokens[arr.lo]; arr.lo++; // CHESS_BOARD
 							if (arr.lo <= arr.hi) START_FEN += ' '+tokens[arr.lo]; arr.lo++; // currentPlayer
 							if (arr.lo <= arr.hi) START_FEN += ' '+tokens[arr.lo]; arr.lo++; // castleRights
 							if (arr.lo <= arr.hi) START_FEN += ' '+tokens[arr.lo]; arr.lo++; // En Passant
-							if (arr.lo <= arr.hi) START_FEN += ' '+parseInt(tokens[arr.lo]); arr.lo++; // "0"
-							if (arr.lo <= arr.hi) START_FEN += ' '+parseInt(tokens[arr.lo]); arr.lo++; // "0"
+							if (arr.lo <= arr.hi) START_FEN += ' '+parseInt(tokens[arr.lo]); arr.lo++; // 0
+							if (arr.lo <= arr.hi) START_FEN += ' '+parseInt(tokens[arr.lo]); arr.lo++; // 0
 						}
 
 						CHESS_BOARD = FENToBoard(); // Tabla betoltese
 
 						var arr = getArr('moves', 'fen', tokens); // Lepesek
 
-						if (arr.lo > 0 && tokens[arr.lo] != undefined)
-						{
+						if (arr.lo > 0 && tokens[arr.lo] != undefined) {
+
 							ClearForSearch(); // Hack: Kereses Nullazasa
 
 							for (var index = arr.lo; index <= arr.hi; index++) {
 								makeMove(GetMoveFromString(tokens[index]));
-								boardPly = 0; // Hack
+								boardPly = 0; // Hack!
 							}
 						}
 
@@ -3917,11 +3917,11 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		var Fen = START_FEN.split(' ');
 
-		for (var index = 0, len = Fen[0].length; index < len; index++)
-		{
+		for (var index = 0; index < Fen[0].length; index++) {
+
 			var value = Fen[0][index];
 			if (value === '/') {
-				for (var j = 0; j < 8; j++) { // Ures mezok
+				for (var j = 0; j < 8; j++) { // Koztes mezo
 					CHESS_BOARD.push(0);
 				}
 				continue;
@@ -3940,13 +3940,12 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			CHESS_BOARD.push(0);
 		}
 
-		currentPlayer = Fen[1] === 'w' ? 0 : 8; // White : Black
+		currentPlayer = Fen[1] === 'w' ? WHITE : BLACK; // Kezdo!
 
-		for (j = 0; j < 4; j++) { // Sancolasok
-			if (Fen[2][j] == ' ') { // Sancolas vege
-				break;
-			}
-			switch(Fen[2][j]) {
+		castleRights = 0; // Sancolas nullazasa
+
+		for (index = 0; index < Fen[2].length; index++) { // Sancolasok
+			switch(Fen[2][index]) {
 				case 'K': castleRights |= CASTLEBIT.WKCA; break; // White King side
 				case 'Q': castleRights |= CASTLEBIT.WQCA; break; // White Queen side
 				case 'k': castleRights |= CASTLEBIT.BKCA; break; // Black King side
