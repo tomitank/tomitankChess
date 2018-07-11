@@ -8,7 +8,8 @@ tomitankChess is Hungarian (pure) JavaScript Chess Engine
 Usage:
 -----------------------------
 - tomitankChess (with node.js) run in Arena, in WinBoard and in Lichess as well.
-- Arena GUI with node.js
+
+- Example for Arena GUI with node.js
   + Comand line: direct acces to node.exe (C:\Program Files\nodejs\node.exe)
   + Command line parameters: direct acces to tomitankChess.js (C:\Program Files\nodejs\tomitankChessUCI.js)
 
