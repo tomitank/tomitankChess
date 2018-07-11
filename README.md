@@ -1,11 +1,12 @@
 tomitankChess is Hungarian (pure) JavaScript Chess Engine
 ------------------------------------------------------------------
-- No Emscripten, no V8 optimization: unlike stockfish-js
-- tomitankChess use node.js for UCI protokol.
-- The Engine is running in your browser too.
+- tomitankChess 2.0 is the first full BitBoard JavaScript chess engine on the World!
+- Why pure? Because it is No Emscripten (unlike stockfish-js), so the code is readable.
+- Pure JavaScript ~5X slower than "C" language, and ~2.5 slower than Emscripten JavaScript.
+- The Engine is running in your browser and with UCI GUI (eg: Arena) as well.
 
 Usage:
-------------------
+-----------------------------
 - Arena GUI with node.js
   + Comand line: direct acces to node.exe (C:\Program Files\nodejs\node.exe)
   + Command line parameters: direct acces to tomitankChess.js (C:\Program Files\nodejs\tomitankChessUCI.js)
@@ -18,53 +19,28 @@ Usage:
   
  - JSUCI: https://sourceforge.net/projects/jsuci/
 
-Version 1.5 (Last Mailbox Version):
-------------------
-- New UI interface code (now working with JSUCI as well)
-- Tuned Search algorithm
-- Use TT at depth == 0
-
 Estimated level (CCRL 40/40):
-------------------
-- v.1.5: ~2590 elo (Strongest JavaScript Chess Engine /2017.12.03/)
-- v.1.4: ~2550 elo (Strongest JavaScript Chess Engine /2017.09.30/)
-
-Features:
-------------------
-- Pawn bitboard with 32 bit integers (http://talkchess.com/forum/viewtopic.php?t=65198)
-- Hash 28MB
-- PVS, fail-low
-- IID
-- LMR
-- LMP
-- Razoring
-- Futility Pruning
-- Null Move Pruning
-- Static null move pruning
-- See pruning at Qsearch
-- Delta Pruning at Qsearch
-- Evaluation based on Fruit 2.1
+-----------------------------
+- 2.0: ~2680 elo (Strongest JavaScript Chess Engine /2018.07.11/)
+- 1.5: ~2590 elo (Strongest JavaScript Chess Engine /2017.12.03/)
+- 1.4: ~2550 elo (Strongest JavaScript Chess Engine /2017.09.30/)
 
 Thanks:
-------------------
-- Thanks Fabien Letouzey for the great source code of the program Fruit 2.1.
-- Thanks again Colin Jenkins (Lozza author) for the great source code.
-- Thanks Gary Linscott for the garbochess source code
+-----------------------------
+- Thanks Fabien Letouzey (Fruit and Senpai author)
+- Thanks Colin Jenkins (Lozza author)
+- Thanks Gary Linscott (garbochess)
 - Thanks Stockfish authors
 - Thanks VICE author
 - http://talkchess.com
 - https://chessprogramming.wikispaces.com/
 
 Links:
-------------------
+-----------------------------
 - Web: http://tanky.hu or http://mobil.tanky.hu
 - Android app: https://play.google.com/store/apps/details?id=sakk.tanky.hu
 - iOS app: https://itunes.apple.com/us/app/sakk-ingyenes/id1150654415?l=hu&ls=1&mt=8
 
-TODO:
-------------------
-- Pawn Eval Hash
-
 Have fun with tomitankChess!
 
-Tamas Kuzmics
+Tamás Kuzmics
