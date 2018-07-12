@@ -8,7 +8,7 @@
 
   + Open Arena GUI -> Engine Management -> Details menu
 
-  + Comand line: direct acces to node.exe (C:\Program Files\nodejs\node.exe)
+  + Command line: direct acces to node.exe (C:\Program Files\nodejs\node.exe)
 
   + Command line parameters: direct acces to tomitankChess.js (C:\Program Files\nodejs\tomitankChessUCI.js)
 
