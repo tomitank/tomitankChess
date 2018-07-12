@@ -1,6 +1,8 @@
 - tomitankChess (with node.js) run in Arena, in WinBoard and in Cutechess as well.
 
 - Example for Arena GUI with node.js
+  + Download Node.js from https://nodejs.org/en/
+  + Open Arena GUI -> Engine Management -> Details menu
   + Comand line: direct acces to node.exe (C:\Program Files\nodejs\node.exe)
   + Command line parameters: direct acces to tomitankChess.js (C:\Program Files\nodejs\tomitankChessUCI.js)
 
@@ -11,3 +13,7 @@
   + tomitankChess.postMessage('go depth 12');
   
  - JSUCI: https://sourceforge.net/projects/jsuci/
+ 
+ Have fun with tomitankChess!
+ 
+ Tamás Kuzmics
