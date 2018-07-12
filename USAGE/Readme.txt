@@ -1,12 +1,3 @@
-tomitankChess is Hungarian (pure) JavaScript Chess Engine
-------------------------------------------------------------------
-- tomitankChess 2.0 is the first full BitBoard JavaScript chess engine on the World!
-- Why pure? Because it is No Emscripten (unlike stockfish-js), so the code is readable.
-- Pure JavaScript ~5X slower than "C" language, and ~2.5 slower than Emscripten JavaScript.
-- The Engine is running in your browser and with UCI GUI (eg: Arena) as well.
-
-Usage:
------------------------------
 - tomitankChess (with node.js) run in Arena, in WinBoard and in Cutechess as well.
 
 - Example for Arena GUI with node.js
