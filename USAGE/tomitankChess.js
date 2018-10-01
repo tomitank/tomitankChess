@@ -1,4 +1,4 @@
-﻿/*
+/*
  tomitankChess 2.0 Copyright (C) 2017-2018 Tamás Kuzmics - tomitank
  Mail: tanky.hu@gmail.com
  Date: 2018.07.11.
@@ -5022,7 +5022,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		if (UI_HOST == HOST_NODEJS) { // Node.js
 
-			nodefs.writeFile('texel_results_nesterov_30_new2'+(useQsearch ? '_pv' : '')+'.txt', print_params(), function(error) {
+			nodefs.writeFile('texel_results_nesterov_0_9_new_v2'+(useQsearch ? '_pv' : '')+'.txt', print_params(), function(error) {
 				if (error) {
 					return console.log(error);
 				} else {
@@ -5045,21 +5045,16 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		var best_error  = 1e6;
 		var this_error  =   0;
 		var iteration   =  -1;
-		var learningR   =  30; // Momentum
+		var learningR   = 0.9; // Momentum
 		var momentumR   = 0.9; // Momentum
-		var lambda   =   1e-4; // L2 param
-		var alpha    =  0.800; // Adam
-		var beta_1   =  0.900; // Adam
-		var beta_2   =  0.999; // Adam
-		var epsilon  =   1e-8; // Adam
 
 		while (1) {
 
 			console.log('Tuning iteration: '+(++iteration));
 
-			if (iteration % 25 == 0) { // Regresszio ellenorzese
+			this_error = complete_linear_error();
 
-				this_error = complete_linear_error();
+			if (iteration % 25 == 0) { // Regresszio ellenorzese
 
 				if (this_error >= best_error) { // Regresszio!
 					console.log('Adam error: '+best_error);
@@ -5080,11 +5075,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 				gradientsEG[i] = 0;
 			}
 
-			for (var i = 0; i < numFens; i++) { // Tanulasi poziciok..
-
-				this_error = single_linear_error(i);
-
-				// Gradiens frissitese
+			for (var i = 0; i < numFens; i++) { // Gradiensek frissitese..
 				for (var j = 0; j < tuneTupNum[i]; j++) {
 					gradientsMG[tuneTuples[i][j].index] += this_error * tuneFactor[i].MG * tuneTuples[i][j].coeff;
 					gradientsEG[tuneTuples[i][j].index] += this_error * tuneFactor[i].EG * tuneTuples[i][j].coeff;
@@ -5093,18 +5084,18 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 			for (var i = 0; i < numParams; i++) { // Parameter kulonbsegenek frissitese..
 
-				// Gradiens atlagolasa + L2 szabalyozas
+				// Gradiens atlagolasa
 
-				gradientsMG[i] = (2.0 / numFens) * gradientsMG[i] * (1 - lambda);
-				gradientsEG[i] = (2.0 / numFens) * gradientsEG[i] * (1 - lambda);
+				gradientsMG[i] = (2.0 / numFens) * gradientsMG[i];
+				gradientsEG[i] = (2.0 / numFens) * gradientsEG[i];
 
 				// Nesterov Momentum
 
 				var prevMomentMG = currMoment[i].MG;
 				var prevMomentEG = currMoment[i].EG;
 
-				currMoment[i].MG  = momentumR * prevMomentMG + learningR * gradientsMG[i];
-				currMoment[i].EG  = momentumR * prevMomentEG + learningR * gradientsEG[i];
+				currMoment[i].MG  = momentumR * prevMomentMG - learningR * gradientsMG[i];
+				currMoment[i].EG  = momentumR * prevMomentEG - learningR * gradientsEG[i];
 
 				paramsDiff[i].MG += currMoment[i].MG + momentumR * (currMoment[i].MG - prevMomentMG);
 				paramsDiff[i].EG += currMoment[i].EG + momentumR * (currMoment[i].EG - prevMomentEG);
@@ -5280,6 +5271,10 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		var total = 0.0;
 
+		var lambda = 1e-4;
+
+		var penality = l2_regularization();
+
 		for (var i = 0; i < numFens; i++) {
 
 			var eval = linear_evaluation(i);
@@ -5287,16 +5282,21 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			total += Math.pow(results[i] - Sigmoid(K, eval), 2);
 		}
 
-		return total / numFens;
+		return total / numFens + lambda * penality;
 	}
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-	function single_linear_error(idx) {
+	function l2_regularization() {
 
-		var eval = linear_evaluation(idx);
+		var l2 = 0;
 
-		return results[idx] - Sigmoid(K, eval);
+		for (var i = 0; i < numParams; i++) {
+			l2 += Math.pow(origParams[i].MG + paramsDiff[i].MG, 2);
+			l2 += Math.pow(origParams[i].EG + paramsDiff[i].EG, 2);
+		}
+
+		return l2;
 	}
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
