@@ -5292,8 +5292,8 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		var l2 = 0;
 
 		for (var i = 0; i < numParams; i++) {
-			l2 += Math.pow(origParams[i].MG + paramsDiff[i].MG, 2);
-			l2 += Math.pow(origParams[i].EG + paramsDiff[i].EG, 2);
+			l2 += Math.pow(paramsDiff[i].MG, 2);
+			l2 += Math.pow(paramsDiff[i].EG, 2);
 		}
 
 		return l2;
