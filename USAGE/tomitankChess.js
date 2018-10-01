@@ -5271,7 +5271,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		var total = 0.0;
 
-		var lambda = 1e-4;
+		var lambda = 1e-7;
 
 		var penality = l2_regularization();
 
