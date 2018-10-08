@@ -4878,18 +4878,18 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		origParams[origParams.length] = { name : 'TempoBonus', MG : MG_SC(TempoBonus), EG :  EG_SC(TempoBonus), num : 1 };
 	}
 
+	if (tuneTrapped) {
+		origParams[origParams.length] = { name : 'BlockedRook'  , MG : MG_SC(BlockedRook)  , EG :  EG_SC(BlockedRook)  , num : 1 };
+		origParams[origParams.length] = { name : 'BlockedBishop', MG : MG_SC(BlockedBishop), EG :  EG_SC(BlockedBishop), num : 1 };
+		origParams[origParams.length] = { name : 'TrappedBishop', MG : MG_SC(TrappedBishop), EG :  EG_SC(TrappedBishop), num : 1 };
+	}
+
 	if (tuneFileRank) {
 		origParams[origParams.length] = { name : 'RookOn7th'     , MG : MG_SC(RookOn7th)     , EG :  EG_SC(RookOn7th)     , num : 1 };
 		origParams[origParams.length] = { name : 'QueenOn7th'    , MG : MG_SC(QueenOn7th)    , EG :  EG_SC(QueenOn7th)    , num : 1 };
 		origParams[origParams.length] = { name : 'RookHalfOpen'  , MG : MG_SC(RookHalfOpen)  , EG :  EG_SC(RookHalfOpen)  , num : 1 };
 		origParams[origParams.length] = { name : 'RookFullOpen'  , MG : MG_SC(RookFullOpen)  , EG :  EG_SC(RookFullOpen)  , num : 1 };
 		origParams[origParams.length] = { name : 'RookOnKingFile', MG : MG_SC(RookOnKingFile), EG :  EG_SC(RookOnKingFile), num : 1 };
-	}
-
-	if (tuneTrapped) {
-		origParams[origParams.length] = { name : 'BlockedRook'  , MG : MG_SC(BlockedRook)  , EG :  EG_SC(BlockedRook)  , num : 1 };
-		origParams[origParams.length] = { name : 'BlockedBishop', MG : MG_SC(BlockedBishop), EG :  EG_SC(BlockedBishop), num : 1 };
-		origParams[origParams.length] = { name : 'TrappedBishop', MG : MG_SC(TrappedBishop), EG :  EG_SC(TrappedBishop), num : 1 };
 	}
 
 	if (tunePawns) {
@@ -5022,7 +5022,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		if (UI_HOST == HOST_NODEJS) { // Node.js
 
-			nodefs.writeFile('texel_results_nesterov_0_9_new_v2'+(useQsearch ? '_pv' : '')+'.txt', print_params(), function(error) {
+			nodefs.writeFile('texel_results_adam_0_01_cross_entorpy'+(useQsearch ? '_pv' : '')+'.txt', print_params(), function(error) {
 				if (error) {
 					return console.log(error);
 				} else {
@@ -5042,23 +5042,29 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		var gradientsMG = new Array(numParams);
 		var gradientsEG = new Array(numParams);
-		var best_error  = 1e6;
-		var this_error  =   0;
-		var iteration   =  -1;
-		var learningR   = 0.9; // Momentum
-		var momentumR   = 0.9; // Momentum
+		var best_error  =   1e8;
+		var this_error  =     0;
+		var iteration   =    -1;
+		var learningR   =   0.9; // Momentum
+		var momentumR   =   0.9; // Momentum
+		var lambda      =  1e-4; // L2 param
+		var alpha       = 0.010; // Adam
+		var beta_1      = 0.900; // Adam
+		var beta_2      = 0.999; // Adam
+		var epsilon     =  1e-8; // Adam
 
 		while (1) {
 
 			console.log('Tuning iteration: '+(++iteration));
 
-			this_error = complete_linear_error();
-
 			if (iteration % 25 == 0) { // Regresszio ellenorzese
 
+				this_error = complete_linear_error(lambda);
+
 				if (this_error >= best_error) { // Regresszio!
-					console.log('Adam error: '+best_error);
-					console.log('Adam alpha: '+alpha);
+					console.log('Best error: '+best_error);
+					console.log('This error: '+this_error);
+					console.log('lambda: '+ lambda);
 					break;
 				}
 
@@ -5075,7 +5081,11 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 				gradientsEG[i] = 0;
 			}
 
-			for (var i = 0; i < numFens; i++) { // Gradiensek frissitese..
+			for (var i = 0; i < numFens; i++) { // Tanulasi poziciok..
+
+				this_error = single_linear_error(i);
+
+				// Gradiens frissitese
 				for (var j = 0; j < tuneTupNum[i]; j++) {
 					gradientsMG[tuneTuples[i][j].index] += this_error * tuneFactor[i].MG * tuneTuples[i][j].coeff;
 					gradientsEG[tuneTuples[i][j].index] += this_error * tuneFactor[i].EG * tuneTuples[i][j].coeff;
@@ -5084,21 +5094,46 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 			for (var i = 0; i < numParams; i++) { // Parameter kulonbsegenek frissitese..
 
-				// Gradiens atlagolasa
+				// Weight Decay - L2 regularization for adaptive methods
 
-				gradientsMG[i] = (2.0 / numFens) * gradientsMG[i];
-				gradientsEG[i] = (2.0 / numFens) * gradientsEG[i];
+				var weight_decay_mg = lambda * paramsDiff[i].MG;
+				var weight_decay_eg = lambda * paramsDiff[i].EG;
+/*
+				// Classical Momentum
 
+				currMoment[i].MG  = momentumR * currMoment[i].MG - learningR * gradientsMG[i];
+				currMoment[i].EG  = momentumR * currMoment[i].EG - learningR * gradientsEG[i];
+
+				paramsDiff[i].MG += currMoment[i].MG - weight_decay_mg;
+				paramsDiff[i].EG += currMoment[i].EG - weight_decay_eg;
+*/
 				// Nesterov Momentum
-
+/*
 				var prevMomentMG = currMoment[i].MG;
 				var prevMomentEG = currMoment[i].EG;
 
 				currMoment[i].MG  = momentumR * prevMomentMG - learningR * gradientsMG[i];
 				currMoment[i].EG  = momentumR * prevMomentEG - learningR * gradientsEG[i];
 
-				paramsDiff[i].MG += currMoment[i].MG + momentumR * (currMoment[i].MG - prevMomentMG);
-				paramsDiff[i].EG += currMoment[i].EG + momentumR * (currMoment[i].EG - prevMomentEG);
+				paramsDiff[i].MG += currMoment[i].MG + momentumR * (currMoment[i].MG - prevMomentMG) - weight_decay_mg;
+				paramsDiff[i].EG += currMoment[i].EG + momentumR * (currMoment[i].EG - prevMomentEG) - weight_decay_eg;
+*/
+				// Adam
+
+				currMoment[i].MG = beta_1 * currMoment[i].MG + (1 - beta_1) * gradientsMG[i];
+				currMoment[i].EG = beta_1 * currMoment[i].EG + (1 - beta_1) * gradientsEG[i];
+
+				currSpeeds[i].MG = beta_2 * currSpeeds[i].MG + (1 - beta_2) * Math.pow(gradientsMG[i], 2);
+				currSpeeds[i].EG = beta_2 * currSpeeds[i].EG + (1 - beta_2) * Math.pow(gradientsEG[i], 2);
+
+				var mt_mg = currMoment[i].MG / (1 - Math.pow(beta_1, iteration+1)); // kezdeti korrekcio
+				var mt_eg = currMoment[i].EG / (1 - Math.pow(beta_1, iteration+1));
+
+				var vt_mg = currSpeeds[i].MG / (1 - Math.pow(beta_2, iteration+1)); // kezdeti korrekcio
+				var vt_eg = currSpeeds[i].EG / (1 - Math.pow(beta_2, iteration+1));
+
+				paramsDiff[i].MG += -alpha * mt_mg / (Math.sqrt(vt_mg) + epsilon) - weight_decay_mg;
+				paramsDiff[i].EG += -alpha * mt_eg / (Math.sqrt(vt_eg) + epsilon) - weight_decay_eg;
 			}
 		}
 	}
@@ -5153,18 +5188,18 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			tuneCoeffs[tuneCoeffs.length] = TexelTrace.TempoBonus;
 		}
 
+		if (tuneTrapped) {
+			tuneCoeffs[tuneCoeffs.length] = TexelTrace.BlockedRook;
+			tuneCoeffs[tuneCoeffs.length] = TexelTrace.BlockedBishop;
+			tuneCoeffs[tuneCoeffs.length] = TexelTrace.TrappedBishop;
+		}
+
 		if (tuneFileRank) {
 			tuneCoeffs[tuneCoeffs.length] = TexelTrace.RookOn7th;
 			tuneCoeffs[tuneCoeffs.length] = TexelTrace.QueenOn7th;
 			tuneCoeffs[tuneCoeffs.length] = TexelTrace.RookHalfOpen;
 			tuneCoeffs[tuneCoeffs.length] = TexelTrace.RookFullOpen;
 			tuneCoeffs[tuneCoeffs.length] = TexelTrace.RookOnKingFile;
-		}
-
-		if (tuneTrapped) {
-			tuneCoeffs[tuneCoeffs.length] = TexelTrace.BlockedRook;
-			tuneCoeffs[tuneCoeffs.length] = TexelTrace.BlockedBishop;
-			tuneCoeffs[tuneCoeffs.length] = TexelTrace.TrappedBishop;
 		}
 
 		if (tunePawns) {
@@ -5236,7 +5271,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 	function compute_optimal_k() {
 
-		var k = 0, best_error = 9999;
+		var k = 0, best_error = 1e8;
 
 		for (var i = -1; i <= 2; i += 0.1) {
 			var this_error = total_eval_error(i);
@@ -5259,7 +5294,12 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 			var eval = tuneEvals[i];
 
-			total += Math.pow(results[i] - Sigmoid(K, eval), 2);
+			var sigmoid = Sigmoid(K, eval);
+
+			if (sigmoid < 0.000001) sigmoid = 0.000001;
+			if (sigmoid > 0.999999) sigmoid = 0.999999;
+
+			total -= Math.log(sigmoid) * results[i] + Math.log(1.0 - sigmoid) * (1.0 - results[i]);
 		}
 
 		return total / numFens;
@@ -5267,22 +5307,25 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-	function complete_linear_error() {
+	function complete_linear_error(lambda) {
 
 		var total = 0.0;
 
-		var lambda = 1e-7;
-
-		var penality = l2_regularization();
+		var penalty = l2_regularization();
 
 		for (var i = 0; i < numFens; i++) {
 
 			var eval = linear_evaluation(i);
 
-			total += Math.pow(results[i] - Sigmoid(K, eval), 2);
+			var sigmoid = Sigmoid(K, eval);
+
+			if (sigmoid < 0.000001) sigmoid = 0.000001;
+			if (sigmoid > 0.999999) sigmoid = 0.999999;
+
+			total -= Math.log(sigmoid) * results[i] + Math.log(1.0 - sigmoid) * (1.0 - results[i]);
 		}
 
-		return total / numFens + lambda * penality;
+		return (total / numFens) + (lambda * penalty / numFens);
 	}
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -5296,7 +5339,20 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			l2 += Math.pow(paramsDiff[i].EG, 2);
 		}
 
-		return l2;
+		return 0.5 * l2; // simplification of derivative
+	}
+
+// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+	function single_linear_error(idx) {
+
+		var sigmoid = Sigmoid(K, linear_evaluation(idx));
+
+		if (sigmoid < 0.000001) sigmoid = 0.000001;
+		if (sigmoid > 0.999999) sigmoid = 0.999999;
+
+		return  (sigmoid - results[idx]) / numFens;
+	//	return -(results[idx] - sigmoid) / numFens; // same
 	}
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
