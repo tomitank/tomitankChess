@@ -3881,7 +3881,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		var pv = new Array(maxDepth); // Pv!
+		var pv = new Array(maxDepth + 1);
 
 		startTime = Date.now(); // Kezdo ido
 
