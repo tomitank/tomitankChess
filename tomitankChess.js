@@ -638,11 +638,11 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
-	function to_88(sq) { return sq + (sq & 070); }
+	function to_88(sq) { return sq + (sq & 56); }
 	function from_88(sq) { return (sq + (sq & 7)) >> 1; }
 	function AttackBBidx(pce, sq, bit) { return (sq << 4) | (pce << 1) | bit; }
 	function BetweenBBidx(sq_1, sq_2, bit) { return (sq_1 << 7) | (sq_2 << 1) | bit; }
-	function LineIsEmpty(sq_1, sq_2, pieces) { // Szabad az ut?
+	function LineIsEmpty(sq_1, sq_2, pieces) { // Szabad az ut ?
 		return (pieces.Low & BetweenBBMask[BetweenBBidx(sq_1, sq_2, LOW)]) | (pieces.High & BetweenBBMask[BetweenBBidx(sq_1, sq_2, HIGH)]);
 	}
 
