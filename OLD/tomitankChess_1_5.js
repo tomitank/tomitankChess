@@ -1,4 +1,4 @@
-﻿/*
+/*
  tomitankChess 1.5 Copyright (C) 2017-2018 Tamás Kuzmics - tomitank
  Mail: tanky.hu@gmail.com
  Date: 2017.12.03.
@@ -16,6 +16,8 @@
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
+
+'use strict';
 
 // Valtozok
 var VERSION         = '1.5';
@@ -57,11 +59,10 @@ var historyTable    = new Array(16); // Elozmeny tabla
 var WKING_ZONE      = new Array(120); // Kiraly zona
 var BKING_ZONE      = new Array(120); // Kiraly zona
 var DISTANCE        = new Array(120); // SQ Kulonbseg
-var MOVE_HISTORY    = new Array(); // Lepeselozmenyek
+var MOVE_HISTORY    = new Array(); // Lepeselozmeny
 brd_moveStart[0]    = 0; // Hack: Lepes lista index
 
-
-// Allandok definialasa a jobb olvashatosag miatt
+// Allandok
 var WHITE           = 0x0;
 var BLACK           = 0x8;
 
@@ -73,8 +74,7 @@ var ROOK            = 0x06;
 var QUEEN           = 0x07;
 var EMPTY           = 0x08;
 
-
-// Feher babukat 4 bit tarolja
+// Feher babuk 4 bit-en
 var WHITE_PAWN      = 0x01;
 var WHITE_KNIGHT    = 0x02;
 var WHITE_KING      = 0x03;
@@ -82,15 +82,13 @@ var WHITE_BISHOP    = 0x05;
 var WHITE_ROOK      = 0x06;
 var WHITE_QUEEN     = 0x07;
 
-
-// Fekete babukat 4 bit tarolja
+// Fekete babuk 4 bit-en
 var BLACK_PAWN      = 0x09;
 var BLACK_KNIGHT    = 0x0A;
 var BLACK_KING      = 0x0B;
 var BLACK_BISHOP    = 0x0D;
 var BLACK_ROOK      = 0x0E;
 var BLACK_QUEEN     = 0x0F;
-
 
 // Allandok
 var FLAG_EXACT      = 3; // Hash zaszlo 3
@@ -113,7 +111,7 @@ var TACTICAL_MASK   = 0x7C000; // Utes, Bevaltas maszk
 var ISMATE          = INFINITE - maxDepth * 2; // Matt
 var HASHENTRIES     = (96 << 20) / 48; // Hashtabla merete 96 MB / 1 Hash merete (48 byte)
 var HASHMASK        = HASHENTRIES - 1; // Hashtabla maszk, csak ketto hatvanya lehet & MASK
-var CASTLEBIT       = { WQCA : 1, WKCA : 2, BQCA : 4, BKCA : 8 }; // Sancolas ellenorzeshez
+var CASTLEBIT       = { WQ : 1, WK : 2, BQ : 4, BK : 8, W : 3, B : 12 }; // Sanc-ellenorzes
 var PawnShelter     = [ 36, 35, 32, 27, 20, 11, 0 ]; // Gyalog-Kiraly Pajzs (RANK_8, RANK_2)
 var AttackWeight    = [ 0, 0, 0.5, 0.75, 0.88, 0.94, 0.97, 0.99 ]; // Kiraly Tamadas Sulyozasa
 var PawnPassed      = [ 0, 0, 0, 0, 0.1, 0.3, 0.6, 1, 0 ]; // Telt Gyalog elorehaladasi pontjai (RANK_0, RANK_8)
@@ -1224,10 +1222,6 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		var att          = 0; // Tamadasok
 		var Draw         = 1; // Dontetlen
 		var pieceIdx     = 0; // Babu index
-		var mgWhite      = 0; // Kezdo Feher
-		var mgBlack      = 0; // Kezdo Fekete
-		var egWhite      = 0; // Vegjatek Feher
-		var egBlack      = 0; // Vegjatek Fekete
 		var PassedEG     = 0; // Vegjatek Gyalog
 		var PassedMG     = 0; // Kozepjatek Gyalog
 		var wAttackPower = 0; // Tamadas pont Feher
@@ -1250,7 +1244,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		var bNumPawns   = brd_pieceCount[BLACK_PAWN];
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-	//	                                  DONTETLEN
+	//                              DONTETLEN
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 		if (wNumPawns == 0 && bNumPawns == 0) { // Nincs Gyalog
@@ -1297,23 +1291,16 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		var mobS = 0; var mobE = 0;
-
 		var attS = 0; var attE = 0;
-
 		var kingS = 0; var kingE = 0;
-
 		var rooksS = 0; var rooksE = 0;
-
 		var pawnsS = 0; var pawnsE = 0;
-
 		var queensS = 0; var queensE = 0;
-
 		var knightsS = 0; var knightsE = 0;
-
 		var bishopsS = 0; var bishopsE = 0;
-
 		var trappedS = 0; var trappedE = 0;
+		var posScoreS = 0; var posScoreE = 0;
+		var mobScoreS = 0; var mobScoreE = 0;
 
 	// Gyalog oszlopok inicializalasa
 		for (var index = 0; index < 10; index++) {
@@ -1325,16 +1312,16 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		var wBigPieces = (wNumKnights || wNumBishops || wNumRooks || wNumQueens);
 		var bBigPieces = (bNumKnights || bNumBishops || bNumRooks || bNumQueens);
 
+	// Gyalog ellenorzes
+		var wPawnHome = PawnBitBoard[WHITE|1] & RankBBMask[RANKS.RANK_2]; // wPawn on 2th
+		var bPawnHome = PawnBitBoard[BLACK]   & RankBBMask[RANKS.RANK_7]; // bPawn on 7th
+
 	// Tamadasi erok
 		var wCanAttack = wNumQueens && (wNumKnights || wNumBishops || wNumRooks || wNumQueens >= 2);
 		var bCanAttack = bNumQueens && (bNumKnights || bNumBishops || bNumRooks || bNumQueens >= 2);
 
-	// Gyalog ellenorzes
-		var wPawnHome = PawnBitBoard[WHITE|1] & RankBBMask[RANKS.RANK_2]; // Feher Gyalog 2. Sorban
-		var bPawnHome = PawnBitBoard[BLACK]   & RankBBMask[RANKS.RANK_7]; // Fekete Gyalog 7. Sorban
-
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-	//	                                  BABUK ERTEKELESE
+	//                              BABUK ERTEKELESE
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 	// Feher Kiraly
@@ -1342,16 +1329,16 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		var wKingRank = TableRanks[wKing]; // Kiraly sora
 		var wKingFile = TableFiles[wKing]; // Kiraly oszlopa
 		var WKZ = WKING_ZONE[wKing]; // Feher Kiraly zonak
-		mgWhite += KingMask[wKing];
-		egWhite += KingEndMask[wKing];
+		posScoreS += KingPstMg[wKing];
+		posScoreE += KingPstEg[wKing];
 
 	// Fekete Kiraly
 		var bKing = brd_pieceList[BLACK_KING << 4];
 		var bKingRank = TableRanks[bKing]; // Kiraly sora
 		var bKingFile = TableFiles[bKing]; // Kiraly oszlopa
 		var BKZ = BKING_ZONE[bKing]; // Fekete Kiraly zonak
-		mgBlack += KingMask[TableMirror[bKing]];
-		egBlack += KingEndMask[TableMirror[bKing]];
+		posScoreS -= KingPstMg[TableMirror[bKing]];
+		posScoreE -= KingPstEg[TableMirror[bKing]];
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -1385,10 +1372,10 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			}
 
 			Phase -= 4;
-			mobS += 1 * mob;
-			mobE += 2 * mob;
-			mgWhite += QueenMask[PCE];
-			egWhite += QueenEndMask[PCE];
+			mobScoreS += 1 * mob;
+			mobScoreE += 2 * mob;
+			posScoreS += QueenPstMg[PCE];
+			posScoreE += QueenPstEg[PCE];
 
 			PCE = brd_pieceList[pieceIdx++]; // Kovetkezo Babu
 		}
@@ -1423,10 +1410,10 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			}
 
 			Phase -= 4;
-			mobS -= 1 * mob;
-			mobE -= 2 * mob;
-			mgBlack += QueenMask[TableMirror[PCE]];
-			egBlack += QueenEndMask[TableMirror[PCE]];
+			mobScoreS -= 1 * mob;
+			mobScoreE -= 2 * mob;
+			posScoreS -= QueenPstMg[TableMirror[PCE]];
+			posScoreE -= QueenPstEg[TableMirror[PCE]];
 
 			PCE = brd_pieceList[pieceIdx++]; // Kovetkezo Babu
 		}
@@ -1445,7 +1432,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			rooksE -= 10; // Nyitott oszlop pont korrekcio
 
 			if (IsOpenFile(File, WHITE) == 0) { // Felig nyitott oszlop
-				if (IsOpenFile(File, BLACK) == 0) { // Teljesen Nyitott
+				if (IsOpenFile(File, BLACK) == 0) { // Teljesen nyitott
 					rooksS += 20;
 					rooksE += 20;
 				} else {
@@ -1482,9 +1469,10 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			}
 
 			Phase -= 2;
-			mobS += 2 * mob;
-			mobE += 4 * mob;
-			mgWhite += RookMask[PCE];
+			mobScoreS += 2 * mob;
+			mobScoreE += 4 * mob;
+			posScoreS += RookPstMg[PCE];
+			posScoreE += RookPstEg[PCE];
 
 			PCE = brd_pieceList[pieceIdx++]; // Kovetkezo Babu
 		}
@@ -1501,7 +1489,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			rooksE += 10; // Nyitott oszlop pont korrekcio
 
 			if (IsOpenFile(File, BLACK) == 0) { // Felig nyitott oszlop
-				if (IsOpenFile(File, WHITE) == 0) { // Teljesen Nyitott
+				if (IsOpenFile(File, WHITE) == 0) { // Teljesen nyitott
 					rooksS -= 20;
 					rooksE -= 20;
 				} else {
@@ -1538,9 +1526,10 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			}
 
 			Phase -= 2;
-			mobS -= 2 * mob;
-			mobE -= 4 * mob;
-			mgBlack += RookMask[TableMirror[PCE]];
+			mobScoreS -= 2 * mob;
+			mobScoreE -= 4 * mob;
+			posScoreS -= RookPstMg[TableMirror[PCE]];
+			posScoreE -= RookPstEg[TableMirror[PCE]];
 
 			PCE = brd_pieceList[pieceIdx++]; // Kovetkezo Babu
 		}
@@ -1565,10 +1554,10 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			}
 
 			Phase -= 1;
-			mobS += 5 * mob;
-			mobE += 5 * mob;
-			mgWhite += BishopMask[PCE];
-			egWhite += BishopEndMask[PCE];
+			mobScoreS += 5 * mob;
+			mobScoreE += 5 * mob;
+			posScoreS += BishopPstMg[PCE];
+			posScoreE += BishopPstEg[PCE];
 
 			PCE = brd_pieceList[pieceIdx++]; // Kovetkezo Babu
 		}
@@ -1591,10 +1580,10 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			}
 
 			Phase -= 1;
-			mobS -= 5 * mob;
-			mobE -= 5 * mob;
-			mgBlack += BishopMask[TableMirror[PCE]];
-			egBlack += BishopEndMask[TableMirror[PCE]];
+			mobScoreS -= 5 * mob;
+			mobScoreE -= 5 * mob;
+			posScoreS -= BishopPstMg[TableMirror[PCE]];
+			posScoreE -= BishopPstEg[TableMirror[PCE]];
 
 			PCE = brd_pieceList[pieceIdx++]; // Kovetkezo Babu
 		}
@@ -1623,10 +1612,10 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			}
 
 			Phase -= 1;
-			mobS += 4 * mob;
-			mobE += 4 * mob;
-			mgWhite += KnightMask[PCE];
-			egWhite += KnightEndMask[PCE];
+			mobScoreS += 4 * mob;
+			mobScoreE += 4 * mob;
+			posScoreS += KnightPstMg[PCE];
+			posScoreE += KnightPstEg[PCE];
 
 			var outpost = KnightOutpost[PCE]; // Huszar Orszem
 
@@ -1660,10 +1649,10 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			}
 
 			Phase -= 1;
-			mobS -= 4 * mob;
-			mobE -= 4 * mob;
-			mgBlack += KnightMask[TableMirror[PCE]];
-			egBlack += KnightEndMask[TableMirror[PCE]];
+			mobScoreS -= 4 * mob;
+			mobScoreE -= 4 * mob;
+			posScoreS -= KnightPstMg[TableMirror[PCE]];
+			posScoreE -= KnightPstEg[TableMirror[PCE]];
 
 			var outpost = KnightOutpost[TableMirror[PCE]]; // Huszar Orszem
 
@@ -1739,7 +1728,8 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 				}
 			}
 
-			mgWhite += PawnMask[PCE];
+			posScoreS += PawnPstMg[PCE];
+			posScoreE += PawnPstEg[PCE];
 
 			PCE = brd_pieceList[pieceIdx++]; // Kovetkezo Babu
 		}
@@ -1806,7 +1796,8 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 				}
 			}
 
-			mgBlack += PawnMask[TableMirror[PCE]];
+			posScoreS -= PawnPstMg[TableMirror[PCE]];
+			posScoreE -= PawnPstEg[TableMirror[PCE]];
 
 			PCE = brd_pieceList[pieceIdx++]; // Kovetkezo Babu
 		}
@@ -1815,7 +1806,8 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		if (wCanAttack)
 		{
-			wAttackCount = Math.min(wAttackCount, 7); // Max 7 tamado
+			if (wAttackCount > 7) wAttackCount = 7; // Max 7 tamado
+
 			attS += (20 * wAttackPower * AttackWeight[wAttackCount]) | 0;
 
 			var Shield = BlackKingShield(bKingFile) * 2; // Gyalog Pajzs
@@ -1839,7 +1831,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 			// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-			if (castleRights & CASTLEBIT.BKCA) { // Sancolhat Kiraly oldal
+			if (castleRights & CASTLEBIT.BK) { // Sancolhat Kiraly oldal
 			var ShieldK  = BlackKingShield(FILES.FILE_G) * 2;
 				Storm	 =  WhitePawnStorm(FILES.FILE_G);
 
@@ -1858,7 +1850,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 			// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-			if (castleRights & CASTLEBIT.BQCA) { // Sancolhat Vezer oldal
+			if (castleRights & CASTLEBIT.BQ) { // Sancolhat Vezer oldal
 			var ShieldQ  = BlackKingShield(FILES.FILE_B) * 2;
 				Storm	 =  WhitePawnStorm(FILES.FILE_B);
 
@@ -1882,7 +1874,8 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		if (bCanAttack)
 		{
-			bAttackCount = Math.min(bAttackCount, 7); // Max 7 tamado
+			if (bAttackCount > 7) bAttackCount = 7; // Max 7 tamado
+
 			attS -= (20 * bAttackPower * AttackWeight[bAttackCount]) | 0;
 
 			var Shield = WhiteKingShield(wKingFile) * 2; // Gyalog Pajzs
@@ -1906,7 +1899,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 			// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-			if (castleRights & CASTLEBIT.WKCA) { // Sancolhat Kiraly oldal
+			if (castleRights & CASTLEBIT.WK) { // Sancolhat Kiraly oldal
 			var ShieldK  = WhiteKingShield(FILES.FILE_G) * 2;
 				Storm	 =  BlackPawnStorm(FILES.FILE_G);
 
@@ -1925,7 +1918,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 			// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-			if (castleRights & CASTLEBIT.WQCA) { // Sancolhat Vezer oldal
+			if (castleRights & CASTLEBIT.WQ) { // Sancolhat Vezer oldal
 			var ShieldQ  = WhiteKingShield(FILES.FILE_B) * 2;
 				Storm	 =  BlackPawnStorm(FILES.FILE_B);
 
@@ -2014,17 +2007,21 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		var materialS = brd_Material[WHITE] - brd_Material[BLACK]; // Anyag ertekelese
-		var materialE = materialS + (wNumPawns * 10) - (bNumPawns * 10); // Ertek atadasa
+		var materialS = (brd_Material[WHITE] - brd_Material[BLACK]); // Kozepjatek
+		var materialE = (wNumPawns   *   90) - (bNumPawns   *   90)  // Vegjatek
+		              + (wNumKnights *  325) - (bNumKnights *  325)
+		              + (wNumBishops *  325) - (bNumBishops *  325)
+		              + (wNumRooks   *  500) - (bNumRooks   *  500)
+		              + (wNumQueens  * 1000) - (bNumQueens  * 1000);
 
-		materialS += mgWhite - mgBlack;
-		materialE += egWhite - egBlack;
+		materialS += posScoreS;
+		materialE += posScoreE;
 
 		var evalS = materialS;
 		var evalE = materialE;
 
-		evalS += mobS;
-		evalE += mobE;
+		evalS += mobScoreS;
+		evalE += mobScoreE;
 
 		evalS += trappedS;
 		evalE += trappedE;
@@ -2057,8 +2054,10 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			Phase = 0;
 		}
 
-		// Linearis interpolacio kezdo es vegjatek kozott
-		Phase = (Phase << 8) / 24 + 0.5 | 0;
+		Phase = (Phase << 8) / 24 + 0.5 | 0; // Jatek fazis
+
+		// Linearis interpolacio kezdo es vegjatek kozott..
+
 		var Score = ((evalS * (256 - Phase)) + (evalE * Phase)) >> 8;
 
 		Score = Score / Draw | 0; // Ketes dontetlennel nem 0-at adunk vissza!
@@ -2073,7 +2072,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		console.log('king'			+' MG '+kingS+		' EG '+kingE);
 		console.log('material'		+' MG '+materialS+	' EG '+materialE);
 		console.log('attacks'		+' MG '+attS+		' EG '+attE);
-		console.log('mobility'		+' MG '+mobS+		' EG '+mobE);
+		console.log('mobility'		+' MG '+mobScoreS+	' EG '+mobScoreE);
 		console.log('trapped'		+' MG '+trappedS+	' EG '+trappedE);
 		console.log('evaluation'	+' MG '+evalS+		' EG '+evalE);
 		console.log('phased eval'	+' PH '+Phase+		' VAL '+Score);*/
@@ -2506,7 +2505,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			if (capturesOnly === false) // Ures mezok
 			{
 				// Sancolas Kiraly oldal
-				if (castleRights & CASTLEBIT.WKCA) {
+				if (castleRights & CASTLEBIT.WK) {
 					if (CHESS_BOARD[SQUARES.F1] == 0 && CHESS_BOARD[SQUARES.G1] == 0) {
 						if (!isSquareUnderAttack(SQUARES.E1, WHITE) && !isSquareUnderAttack(SQUARES.F1, WHITE)) {
 							AddQuietMove(SQUARES.E1, SQUARES.G1, 0, 1);
@@ -2514,7 +2513,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 					}
 				}
 				// Sancolas Vezer oldal
-				if (castleRights & CASTLEBIT.WQCA) {
+				if (castleRights & CASTLEBIT.WQ) {
 					if (CHESS_BOARD[SQUARES.D1] == 0 && CHESS_BOARD[SQUARES.C1] == 0 && CHESS_BOARD[SQUARES.B1] == 0) {
 						if (!isSquareUnderAttack(SQUARES.E1, WHITE) && !isSquareUnderAttack(SQUARES.D1, WHITE)) {
 							AddQuietMove(SQUARES.E1, SQUARES.C1, 0, 1);
@@ -2613,7 +2612,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			if (capturesOnly === false) // Ures mezok
 			{
 				// Sancolas Kiraly oldal
-				if (castleRights & CASTLEBIT.BKCA) {
+				if (castleRights & CASTLEBIT.BK) {
 					if (CHESS_BOARD[SQUARES.F8] == 0 && CHESS_BOARD[SQUARES.G8] == 0) {
 						if (!isSquareUnderAttack(SQUARES.E8, BLACK) && !isSquareUnderAttack(SQUARES.F8, BLACK)) {
 							AddQuietMove(SQUARES.E8, SQUARES.G8, 0, 1);
@@ -2621,7 +2620,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 					}
 				}
 				// Sancolas Vezer oldal
-				if (castleRights & CASTLEBIT.BQCA) {
+				if (castleRights & CASTLEBIT.BQ) {
 					if (CHESS_BOARD[SQUARES.D8] == 0 && CHESS_BOARD[SQUARES.C8] == 0 && CHESS_BOARD[SQUARES.B8] == 0) {
 						if (!isSquareUnderAttack(SQUARES.E8, BLACK) && !isSquareUnderAttack(SQUARES.D8, BLACK)) {
 							AddQuietMove(SQUARES.E8, SQUARES.C8, 0, 1);
@@ -3393,9 +3392,9 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
-	var HOST_WEB = 0;
-	var HOST_TANKY = 1;
-	var HOST_JSUCI = 2;
+	var HOST_WEB    = 0;
+	var HOST_TANKY  = 1;
+	var HOST_JSUCI  = 2;
 	var HOST_NODEJS = 3;
 	var HOST_WORKER = 4;
 	var UI_HOST = HOST_WEB;
@@ -3429,10 +3428,13 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
+	var onmessage; // Hack: 'use strict'
+
 	onmessage = function (command) {
 
-		var tokens = [];
+		var tokens  = [];
 		var spec_id = '';
+		var message = '';
 
 		if (command !== null)
 		{
@@ -3546,33 +3548,37 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 					case 'go':
 
-					    maxSearchTime  = getInt('movetime', 0, tokens); // Ido Parameter
-					var maxSearchDepth = getInt('depth', 0, tokens); // Melyseg Parameter
+					    maxSearchTime  = getInt('movetime', 0, tokens); // Time
+					var maxSearchDepth = getInt('depth'   , 0, tokens); // Depth
 
 						if (maxSearchTime == 0)
 						{
 							var movesToGo = getInt('movestogo', 30, tokens); // Time / Move
 
 							if (currentPlayer == WHITE) {
-								var Inc = getInt('winc', 0, tokens); // Ido noveles
-								var Time = getInt('wtime', 0, tokens); // Feher ido
+								var Inc  = getInt('winc' , 0, tokens);
+								var Time = getInt('wtime', 0, tokens);
 							} else {
-								var Inc = getInt('binc', 0, tokens); // Ido noveles
-								var Time = getInt('btime', 0, tokens); // Fekete ido
+								var Inc  = getInt('binc' , 0, tokens);
+								var Time = getInt('btime', 0, tokens);
 							}
 
-							maxSearchTime = ((Time / movesToGo) + Inc - 50) | 0; // 50ms for lag
+							Time = Time - Math.min(1000, Time / 10);
+
+							var total = Time + Inc * (movesToGo - 1);
+
+							maxSearchTime = Math.min(total / movesToGo, Time) | 0;
 						}
 
-						if (maxSearchDepth > 0) { // Fix melysegnel max 1 ora
+						if (maxSearchDepth > 0) { // Fix melysegnel max 1 ora!
 							maxSearchTime = 1000 * 3600;
 						}
 
-						if (maxSearchDepth <= 0) { // Max melyseg
+						if (maxSearchDepth > 64 || maxSearchDepth <= 0) { // Limit
 							maxSearchDepth = 64;
 						}
 
-						SearchPosition(maxSearchDepth); // Kereses
+						SearchPosition(maxSearchDepth); // Kereses..
 
 					break;
 
@@ -3670,9 +3676,10 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 
 	function GetMoveFromString(moveString) {
-		GenerateAllMoves(false, false); // Minden lepes
-		for (var index = brd_moveStart[boardPly]; index < brd_moveStart[boardPly + 1]; ++index)
-		{
+
+		GenerateAllMoves(false, false);
+
+		for (var index = brd_moveStart[boardPly]; index < brd_moveStart[boardPly + 1]; ++index) {
 			if (FormatMove(brd_moveList[index]) == moveString) {
 				return brd_moveList[index];
 			}
@@ -3731,16 +3738,16 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		SideKeyLow  = RAND_32(); // Aki kezd hashKey
 		SideKeyHigh = RAND_32(); // Aki kezd hashKey
 
-		for (pce = 0; pce < 16; pce++) { // Babuk hasKey (En Passant: 0)
+		for (var pce = 0; pce < 16; pce++) { // Babuk hasKey (En Passant: 0)
 			PieceKeysLow[pce]  = new Array(120);
 			PieceKeysHigh[pce] = new Array(120);
-			for (sq = 0; sq < 120; sq++) {
+			for (var sq = 0; sq < 120; sq++) {
 				PieceKeysLow[pce][sq]  = RAND_32();
 				PieceKeysHigh[pce][sq] = RAND_32();
 			}
 		}
 
-		for (index = 0; index < 16; index++) { // Sancolas hashKey
+		for (var index = 0; index < 16; index++) { // Sancolas hashKey
 			CastleKeysLow[index]  = RAND_32();
 			CastleKeysHigh[index] = RAND_32();
 		}
@@ -3863,17 +3870,17 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		};
 
 		// whose turn?
-		FEN = FEN.substr(0, FEN.length - 1) + ' ';
-		FEN += currentPlayer === 0 ? 'w' : 'b';
+		FEN  = FEN.substr(0, FEN.length - 1) + ' ';
+		FEN += currentPlayer === WHITE ? 'w' : 'b';
 
-		if (castleRights === 0) { // Nincs mar sancolas
+		if (castleRights == 0) { // Nincs sancolas
 			FEN += ' -';
 		} else {
 			FEN += ' '; // Szokoz hozzadasa
-			if (castleRights & CASTLEBIT.WKCA) FEN += 'K'; // White King side
-			if (castleRights & CASTLEBIT.WQCA) FEN += 'Q'; // White Queen side
-			if (castleRights & CASTLEBIT.BKCA) FEN += 'k'; // Black King side
-			if (castleRights & CASTLEBIT.BQCA) FEN += 'q'; // Black Queen side
+			if (castleRights & CASTLEBIT.WK) FEN += 'K'; // White King side
+			if (castleRights & CASTLEBIT.WQ) FEN += 'Q'; // White Queen side
+			if (castleRights & CASTLEBIT.BK) FEN += 'k'; // Black King side
+			if (castleRights & CASTLEBIT.BQ) FEN += 'q'; // Black Queen side
 		}
 
 		if (EN_PASSANT == 0) { // Nincs En Passant
@@ -3885,7 +3892,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		FEN += ' 0'; // 50 Lepes szamlalo
 		FEN += ' 0'; // Osszes lepes
 
-		// FEN += ' KQkq - 0 0'; // alap ertek
+	//	FEN += ' KQkq - 0 0'; // alap
 
 		return FEN;
 	}
@@ -3942,22 +3949,22 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		currentPlayer = Fen[1] === 'w' ? WHITE : BLACK; // Kezdo!
 
-		castleRights = 0; // Sancolas nullazasa
+		castleRights = 0; // Sancolas nullazas!
 
 		for (index = 0; index < Fen[2].length; index++) { // Sancolasok
 			switch(Fen[2][index]) {
-				case 'K': castleRights |= CASTLEBIT.WKCA; break; // White King side
-				case 'Q': castleRights |= CASTLEBIT.WQCA; break; // White Queen side
-				case 'k': castleRights |= CASTLEBIT.BKCA; break; // Black King side
-				case 'q': castleRights |= CASTLEBIT.BQCA; break; // Black Queen side
+				case 'K': castleRights |= CASTLEBIT.WK; break; // White King side
+				case 'Q': castleRights |= CASTLEBIT.WQ; break; // White Queen side
+				case 'k': castleRights |= CASTLEBIT.BK; break; // Black King side
+				case 'q': castleRights |= CASTLEBIT.BQ; break; // Black Queen side
 				default: break;
 			}
 		}
 
 		if (Fen[3] == '-') { // Nincs En Passant
-			EN_PASSANT = '-';
+			EN_PASSANT = 0;
 		} else {
-			EN_PASSANT = parseInt(SQUARES[Fen[3].toUpperCase()]); // En Passant mezo
+			EN_PASSANT = parseInt(SQUARES[Fen[3].toUpperCase()]); // En Passant
 		}
 
 		InitPieceList(); // Babuk inicializalasa
@@ -4018,114 +4025,6 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 	  1,   1,   1,   1,   1,   1,   1,   1
 	];
 
-	// Kiraly
-	var KingMask = [
-	-40, -30, -50, -70, -70, -50, -30, -40,		0, 0, 0, 0, 0, 0, 0, 0,
-	-30, -20, -40, -60, -60, -40, -20, -30,		0, 0, 0, 0, 0, 0, 0, 0,
-	-20, -10, -30, -50, -50, -30, -10, -20,		0, 0, 0, 0, 0, 0, 0, 0,
-	-10,   0, -20, -40, -40, -20,   0, -10,		0, 0, 0, 0, 0, 0, 0, 0,
-	  0,  10, -10, -30, -30, -10,  10,   0,		0, 0, 0, 0, 0, 0, 0, 0,
-	 10,  20,   0, -20, -20,   0,  20,  10,		0, 0, 0, 0, 0, 0, 0, 0,
-	 30,  40,  20,   0,   0,  20,  40,  30,		0, 0, 0, 0, 0, 0, 0, 0,
-	 40,  50,  30,  10,  10,  30,  50,  40
-	];
-
-	// Kiraly vegjatek
-	var KingEndMask = [
-	-72, -48, -36, -24, -24, -36, -48, -72,		0, 0, 0, 0, 0, 0, 0, 0,
-	-48, -24, -12,   0,   0, -12, -24, -48,		0, 0, 0, 0, 0, 0, 0, 0,
-	-36, -12,   0,  12,  12,   0, -12, -36,		0, 0, 0, 0, 0, 0, 0, 0,
-	-24,   0,  12,  24,  24,  12,   0, -24,		0, 0, 0, 0, 0, 0, 0, 0,
-	-24,   0,  12,  24,  24,  12,   0, -24,		0, 0, 0, 0, 0, 0, 0, 0,
-	-36, -12,   0,  12,  12,   0, -12, -36,		0, 0, 0, 0, 0, 0, 0, 0,
-	-48, -24, -12,   0,   0, -12, -24, -48,		0, 0, 0, 0, 0, 0, 0, 0,
-	-72, -48, -36, -24, -24, -36, -48, -72
-	];
-
-	// Vezer
-	var QueenMask = [
-	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
-	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
-	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
-	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
-	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
-	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
-	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
-	 -5,  -5,  -5,  -5,  -5,  -5,  -5,  -5
-	];
-
-	// Vezer vegjatek
-	var QueenEndMask = [
-	-24, -16, -12,  -8,  -8, -12, -16, -24,		0, 0, 0, 0, 0, 0, 0, 0,
-	-16,  -8,  -4,   0,   0,  -4,  -8, -16,		0, 0, 0, 0, 0, 0, 0, 0,
-	-12,  -4,   0,   4,   4,   0,  -4, -12,		0, 0, 0, 0, 0, 0, 0, 0,
-	 -8,   0,   4,   8,   8,   4,   0,  -8,		0, 0, 0, 0, 0, 0, 0, 0,
-	 -8,   0,   4,   8,   8,   4,   0,  -8,		0, 0, 0, 0, 0, 0, 0, 0,
-	-12,  -4,   0,   4,   4,   0,  -4, -12,		0, 0, 0, 0, 0, 0, 0, 0,
-	-16,  -8,  -4,   0,   0,  -4,  -8, -16,		0, 0, 0, 0, 0, 0, 0, 0,
-	-24, -16, -12,  -8,  -8, -12, -16, -24
-	];
-
-	// Bastya
-	var RookMask = [
-	 -6,  -3,   0,   3,   3,   0,  -3,  -6,		0, 0, 0, 0, 0, 0, 0, 0,
-	 -6,  -3,   0,   3,   3,   0,  -3,  -6,		0, 0, 0, 0, 0, 0, 0, 0,
-	 -6,  -3,   0,   3,   3,   0,  -3,  -6,		0, 0, 0, 0, 0, 0, 0, 0,
-	 -6,  -3,   0,   3,   3,   0,  -3,  -6,		0, 0, 0, 0, 0, 0, 0, 0,
-	 -6,  -3,   0,   3,   3,   0,  -3,  -6,		0, 0, 0, 0, 0, 0, 0, 0,
-	 -6,  -3,   0,   3,   3,   0,  -3,  -6,		0, 0, 0, 0, 0, 0, 0, 0,
-	 -6,  -3,   0,   3,   3,   0,  -3,  -6,		0, 0, 0, 0, 0, 0, 0, 0,
-	 -6,  -3,   0,   3,   3,   0,  -3,  -6
-	];
-
-	// Futo
-	var BishopMask = [
-	 -8,  -8,  -6,  -4,  -4,  -6,  -8,  -8,		0, 0, 0, 0, 0, 0, 0, 0,
-	 -8,   0,  -2,   0,   0,  -2,   0,  -8,		0, 0, 0, 0, 0, 0, 0, 0,
-	 -6,  -2,   4,   2,   2,   4,  -2,  -6,		0, 0, 0, 0, 0, 0, 0, 0,
-	 -4,   0,   2,   8,   8,   2,   0,  -4,		0, 0, 0, 0, 0, 0, 0, 0,
-	 -4,   0,   2,   8,   8,   2,   0,  -4,		0, 0, 0, 0, 0, 0, 0, 0,
-	 -6,  -2,   4,   2,   2,   4,  -2,  -6,		0, 0, 0, 0, 0, 0, 0, 0,
-	 -8,   0,  -2,   0,   0,  -2,   0,  -8,		0, 0, 0, 0, 0, 0, 0, 0,
-	-18, -18, -16, -14, -14, -16, -18, -18
-	];
-
-	// Futo vegjatek
-	var BishopEndMask = [
-	-18, -12,  -9,  -6,  -6,  -9, -12, -18,		0, 0, 0, 0, 0, 0, 0, 0,
-	-12,  -6,  -3,   0,   0,  -3,  -6, -12,		0, 0, 0, 0, 0, 0, 0, 0,
-	 -9,  -3,   0,   3,   3,   0,  -3,  -9,		0, 0, 0, 0, 0, 0, 0, 0,
-	 -6,   0,   3,   6,   6,   3,   0,  -6,		0, 0, 0, 0, 0, 0, 0, 0,
-	 -6,   0,   3,   6,   6,   3,   0,  -6,		0, 0, 0, 0, 0, 0, 0, 0,
-	 -9,  -3,   0,   3,   3,   0,  -3,  -9,		0, 0, 0, 0, 0, 0, 0, 0,
-	-12,  -6,  -3,   0,   0,  -3,  -6, -12,		0, 0, 0, 0, 0, 0, 0, 0,
-	-18, -12,  -9,  -6,  -6,  -9, -12, -18
-	];
-
-	// Huszar
-	var KnightMask = [
-   -135, -25, -15, -10, -10, -15, -25,-135,		0, 0, 0, 0, 0, 0, 0, 0,
-	-20, -10,   0,   5,   5,   0, -10, -20,		0, 0, 0, 0, 0, 0, 0, 0,
-	 -5,   5,  15,  20,  20,  15,   5,  -5,		0, 0, 0, 0, 0, 0, 0, 0,
-	 -5,   5,  15,  20,  20,  15,   5,  -5,		0, 0, 0, 0, 0, 0, 0, 0,
-	-10,   0,  10,  15,  15,  10,   0, -10,		0, 0, 0, 0, 0, 0, 0, 0,
-	-20, -10,   0,   5,   5,   0, -10, -20,		0, 0, 0, 0, 0, 0, 0, 0,
-	-35, -25, -15, -10, -10, -15, -25, -35,		0, 0, 0, 0, 0, 0, 0, 0,
-	-50, -40, -30, -25, -25, -30, -40, -50
-	];
-
-	// Huszar vegjatek
-	var KnightEndMask = [
-	-40, -30, -20, -15, -15, -20, -30, -40,		0, 0, 0, 0, 0, 0, 0, 0,
-	-30, -20, -10,  -5,  -5, -10, -20, -30,		0, 0, 0, 0, 0, 0, 0, 0,
-	-20, -10,   0,   5,   5,   0, -10, -20,		0, 0, 0, 0, 0, 0, 0, 0,
-	-15,  -5,   5,  10,  10,   5,  -5, -15,		0, 0, 0, 0, 0, 0, 0, 0,
-	-15,  -5,   5,  10,  10,   5,  -5, -15,		0, 0, 0, 0, 0, 0, 0, 0,
-	-20, -10,   0,   5,   5,   0, -10, -20,		0, 0, 0, 0, 0, 0, 0, 0,
-	-30, -20, -10,  -5,  -5, -10, -20, -30,		0, 0, 0, 0, 0, 0, 0, 0,
-	-40, -30, -20, -15, -15, -20, -30, -40
-	];
-
 	// Huszar outpost "orszem"
 	var KnightOutpost = [
 	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
@@ -4138,8 +4037,128 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 	  0,   0,   0,   0,   0,   0,   0,   0
 	];
 
+	// Kiraly
+	var KingPstMg = [
+	-40, -30, -50, -70, -70, -50, -30, -40,		0, 0, 0, 0, 0, 0, 0, 0,
+	-30, -20, -40, -60, -60, -40, -20, -30,		0, 0, 0, 0, 0, 0, 0, 0,
+	-20, -10, -30, -50, -50, -30, -10, -20,		0, 0, 0, 0, 0, 0, 0, 0,
+	-10,   0, -20, -40, -40, -20,   0, -10,		0, 0, 0, 0, 0, 0, 0, 0,
+	  0,  10, -10, -30, -30, -10,  10,   0,		0, 0, 0, 0, 0, 0, 0, 0,
+	 10,  20,   0, -20, -20,   0,  20,  10,		0, 0, 0, 0, 0, 0, 0, 0,
+	 30,  40,  20,   0,   0,  20,  40,  30,		0, 0, 0, 0, 0, 0, 0, 0,
+	 40,  50,  30,  10,  10,  30,  50,  40
+	];
+
+	// Kiraly vegjatek
+	var KingPstEg = [
+	-72, -48, -36, -24, -24, -36, -48, -72,		0, 0, 0, 0, 0, 0, 0, 0,
+	-48, -24, -12,   0,   0, -12, -24, -48,		0, 0, 0, 0, 0, 0, 0, 0,
+	-36, -12,   0,  12,  12,   0, -12, -36,		0, 0, 0, 0, 0, 0, 0, 0,
+	-24,   0,  12,  24,  24,  12,   0, -24,		0, 0, 0, 0, 0, 0, 0, 0,
+	-24,   0,  12,  24,  24,  12,   0, -24,		0, 0, 0, 0, 0, 0, 0, 0,
+	-36, -12,   0,  12,  12,   0, -12, -36,		0, 0, 0, 0, 0, 0, 0, 0,
+	-48, -24, -12,   0,   0, -12, -24, -48,		0, 0, 0, 0, 0, 0, 0, 0,
+	-72, -48, -36, -24, -24, -36, -48, -72
+	];
+
+	// Vezer
+	var QueenPstMg = [
+	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
+	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
+	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
+	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
+	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
+	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
+	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
+	 -5,  -5,  -5,  -5,  -5,  -5,  -5,  -5
+	];
+
+	// Vezer vegjatek
+	var QueenPstEg = [
+	-24, -16, -12,  -8,  -8, -12, -16, -24,		0, 0, 0, 0, 0, 0, 0, 0,
+	-16,  -8,  -4,   0,   0,  -4,  -8, -16,		0, 0, 0, 0, 0, 0, 0, 0,
+	-12,  -4,   0,   4,   4,   0,  -4, -12,		0, 0, 0, 0, 0, 0, 0, 0,
+	 -8,   0,   4,   8,   8,   4,   0,  -8,		0, 0, 0, 0, 0, 0, 0, 0,
+	 -8,   0,   4,   8,   8,   4,   0,  -8,		0, 0, 0, 0, 0, 0, 0, 0,
+	-12,  -4,   0,   4,   4,   0,  -4, -12,		0, 0, 0, 0, 0, 0, 0, 0,
+	-16,  -8,  -4,   0,   0,  -4,  -8, -16,		0, 0, 0, 0, 0, 0, 0, 0,
+	-24, -16, -12,  -8,  -8, -12, -16, -24
+	];
+
+	// Bastya
+	var RookPstMg = [
+	 -6,  -3,   0,   3,   3,   0,  -3,  -6,		0, 0, 0, 0, 0, 0, 0, 0,
+	 -6,  -3,   0,   3,   3,   0,  -3,  -6,		0, 0, 0, 0, 0, 0, 0, 0,
+	 -6,  -3,   0,   3,   3,   0,  -3,  -6,		0, 0, 0, 0, 0, 0, 0, 0,
+	 -6,  -3,   0,   3,   3,   0,  -3,  -6,		0, 0, 0, 0, 0, 0, 0, 0,
+	 -6,  -3,   0,   3,   3,   0,  -3,  -6,		0, 0, 0, 0, 0, 0, 0, 0,
+	 -6,  -3,   0,   3,   3,   0,  -3,  -6,		0, 0, 0, 0, 0, 0, 0, 0,
+	 -6,  -3,   0,   3,   3,   0,  -3,  -6,		0, 0, 0, 0, 0, 0, 0, 0,
+	 -6,  -3,   0,   3,   3,   0,  -3,  -6
+	];
+
+	// Bastya vegjatek
+	var RookPstEg = [
+	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
+	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
+	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
+	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
+	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
+	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
+	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
+	  0,   0,   0,   0,   0,   0,   0,   0
+	];
+
+	// Futo
+	var BishopPstMg = [
+	 -8,  -8,  -6,  -4,  -4,  -6,  -8,  -8,		0, 0, 0, 0, 0, 0, 0, 0,
+	 -8,   0,  -2,   0,   0,  -2,   0,  -8,		0, 0, 0, 0, 0, 0, 0, 0,
+	 -6,  -2,   4,   2,   2,   4,  -2,  -6,		0, 0, 0, 0, 0, 0, 0, 0,
+	 -4,   0,   2,   8,   8,   2,   0,  -4,		0, 0, 0, 0, 0, 0, 0, 0,
+	 -4,   0,   2,   8,   8,   2,   0,  -4,		0, 0, 0, 0, 0, 0, 0, 0,
+	 -6,  -2,   4,   2,   2,   4,  -2,  -6,		0, 0, 0, 0, 0, 0, 0, 0,
+	 -8,   0,  -2,   0,   0,  -2,   0,  -8,		0, 0, 0, 0, 0, 0, 0, 0,
+	-18, -18, -16, -14, -14, -16, -18, -18
+	];
+
+	// Futo vegjatek
+	var BishopPstEg = [
+	-18, -12,  -9,  -6,  -6,  -9, -12, -18,		0, 0, 0, 0, 0, 0, 0, 0,
+	-12,  -6,  -3,   0,   0,  -3,  -6, -12,		0, 0, 0, 0, 0, 0, 0, 0,
+	 -9,  -3,   0,   3,   3,   0,  -3,  -9,		0, 0, 0, 0, 0, 0, 0, 0,
+	 -6,   0,   3,   6,   6,   3,   0,  -6,		0, 0, 0, 0, 0, 0, 0, 0,
+	 -6,   0,   3,   6,   6,   3,   0,  -6,		0, 0, 0, 0, 0, 0, 0, 0,
+	 -9,  -3,   0,   3,   3,   0,  -3,  -9,		0, 0, 0, 0, 0, 0, 0, 0,
+	-12,  -6,  -3,   0,   0,  -3,  -6, -12,		0, 0, 0, 0, 0, 0, 0, 0,
+	-18, -12,  -9,  -6,  -6,  -9, -12, -18
+	];
+
+	// Huszar
+	var KnightPstMg = [
+   -135, -25, -15, -10, -10, -15, -25,-135,		0, 0, 0, 0, 0, 0, 0, 0,
+	-20, -10,   0,   5,   5,   0, -10, -20,		0, 0, 0, 0, 0, 0, 0, 0,
+	 -5,   5,  15,  20,  20,  15,   5,  -5,		0, 0, 0, 0, 0, 0, 0, 0,
+	 -5,   5,  15,  20,  20,  15,   5,  -5,		0, 0, 0, 0, 0, 0, 0, 0,
+	-10,   0,  10,  15,  15,  10,   0, -10,		0, 0, 0, 0, 0, 0, 0, 0,
+	-20, -10,   0,   5,   5,   0, -10, -20,		0, 0, 0, 0, 0, 0, 0, 0,
+	-35, -25, -15, -10, -10, -15, -25, -35,		0, 0, 0, 0, 0, 0, 0, 0,
+	-50, -40, -30, -25, -25, -30, -40, -50
+	];
+
+	// Huszar vegjatek
+	var KnightPstEg = [
+	-40, -30, -20, -15, -15, -20, -30, -40,		0, 0, 0, 0, 0, 0, 0, 0,
+	-30, -20, -10,  -5,  -5, -10, -20, -30,		0, 0, 0, 0, 0, 0, 0, 0,
+	-20, -10,   0,   5,   5,   0, -10, -20,		0, 0, 0, 0, 0, 0, 0, 0,
+	-15,  -5,   5,  10,  10,   5,  -5, -15,		0, 0, 0, 0, 0, 0, 0, 0,
+	-15,  -5,   5,  10,  10,   5,  -5, -15,		0, 0, 0, 0, 0, 0, 0, 0,
+	-20, -10,   0,   5,   5,   0, -10, -20,		0, 0, 0, 0, 0, 0, 0, 0,
+	-30, -20, -10,  -5,  -5, -10, -20, -30,		0, 0, 0, 0, 0, 0, 0, 0,
+	-40, -30, -20, -15, -15, -20, -30, -40
+	];
+
 	// Gyalog
-	var PawnMask = [
+	var PawnPstMg = [
 	-15,  -5,   0,   5,   5,   0,  -5, -15,		0, 0, 0, 0, 0, 0, 0, 0,
 	-15,  -5,   0,   5,   5,   0,  -5, -15,		0, 0, 0, 0, 0, 0, 0, 0,
 	-15,  -5,   0,   5,   5,   0,  -5, -15,		0, 0, 0, 0, 0, 0, 0, 0,
@@ -4148,4 +4167,16 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 	-15,  -5,   0,  15,  15,   0,  -5, -15,		0, 0, 0, 0, 0, 0, 0, 0,
 	-15,  -5,   0,   5,   5,   0,  -5, -15,		0, 0, 0, 0, 0, 0, 0, 0,
 	-15,  -5,   0,   5,   5,   0,  -5, -15
+	];
+
+	// Gyalog vegjatek
+	var PawnPstEg = [
+	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
+	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
+	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
+	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
+	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
+	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
+	  0,   0,   0,   0,   0,   0,   0,   0,		0, 0, 0, 0, 0, 0, 0, 0,
+	  0,   0,   0,   0,   0,   0,   0,   0
 	];
