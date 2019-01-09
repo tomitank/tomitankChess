@@ -1,4 +1,4 @@
-﻿/*
+/*
  tomitankChess 2.1 Copyright (C) 2017-2018 Tamás Kuzmics - tomitank
  Mail: tanky.hu@gmail.com
  Date: 2018.11.26.
@@ -827,19 +827,19 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		brd_hashKeyHigh ^= SideKeyHigh;
 	}
 	function HASH_PCE(pce, sq) {
-		brd_hashKeyLow  ^= PieceKeysLow[ (pce << 6) | sq];
+		brd_hashKeyLow  ^= PieceKeysLow [(pce << 6) | sq];
 		brd_hashKeyHigh ^= PieceKeysHigh[(pce << 6) | sq];
 		if ((pce & 0x07) === PAWN) {
-			brd_pawnKeyLow  ^= PieceKeysLow[ (pce << 6) | sq];
+			brd_pawnKeyLow  ^= PieceKeysLow [(pce << 6) | sq];
 			brd_pawnKeyHigh ^= PieceKeysHigh[(pce << 6) | sq];
 		}
 	}
 	function HASH_CA() {
-		brd_hashKeyLow  ^= CastleKeysLow[castleRights];
+		brd_hashKeyLow  ^= CastleKeysLow [castleRights];
 		brd_hashKeyHigh ^= CastleKeysHigh[castleRights];
 	}
 	function HASH_EP() {
-		brd_hashKeyLow  ^= PieceKeysLow[EN_PASSANT];
+		brd_hashKeyLow  ^= PieceKeysLow [EN_PASSANT];
 		brd_hashKeyHigh ^= PieceKeysHigh[EN_PASSANT];
 	}
 	function MOVE_PCE(pce, from, to) {
@@ -1092,8 +1092,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 	function isSquareUnderAttack(target, us) {
 
-		var bb, from;
-		var them = us^8; // Ellenfel
+		var bb, from, them = us^8;
 
 		// Gyalog tamadas
 		if (us === BLACK ? DefendedByWPawn(target) : DefendedByBPawn(target)) {
@@ -1153,11 +1152,11 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 		// Akivel lepunk
-		var PCE = PROMOTED(move) ? PROMOTED(move) & 0x07 : CHESS_BOARD[from] & 0x07;
+		var PCE = PROMOTED(move) !== 0 ? PROMOTED(move) & 0x07 : CHESS_BOARD[from] & 0x07;
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		// Gyalog Sakk?
+		// Gyalog Sakk..?
 		if (PCE === PAWN)
 		{
 			var attack = us ? NeighbourMask[to+8] & BitBoard[WHITE_KING << 1 | HighSQMask[to+8]]
@@ -1173,8 +1172,8 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		var King = brd_pieceList[(them | KING) << 4];
 
 		// Babu mozgatasa
-		HighSQMask[from] ? xPiecesBB.High &= ClearMask[from] : xPiecesBB.Low &= ClearMask[from];
-		HighSQMask[to]   ? xPiecesBB.High |= SetMask[to]     : xPiecesBB.Low |= SetMask[to];
+		HighSQMask[from] ? xPiecesBB.High ^= SetMask[from] : xPiecesBB.Low ^= SetMask[from];
+		HighSQMask[to]   ? xPiecesBB.High |= SetMask[to]   : xPiecesBB.Low |= SetMask[to];
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -1182,17 +1181,16 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		if (move & CASTLED_MASK)
 		{
 			switch (to) {
-				case SQUARES.C1: var RookFrom = SQUARES.A1; var RookTo = SQUARES.D1; break;
-				case SQUARES.C8: var RookFrom = SQUARES.A8; var RookTo = SQUARES.D8; break;
-				case SQUARES.G1: var RookFrom = SQUARES.H1; var RookTo = SQUARES.F1; break;
-				case SQUARES.G8: var RookFrom = SQUARES.H8; var RookTo = SQUARES.F8; break;
+				case SQUARES.C1: var RookFrom = SQUARES.A1, RookTo = SQUARES.D1; break;
+				case SQUARES.C8: var RookFrom = SQUARES.A8, RookTo = SQUARES.D8; break;
+				case SQUARES.G1: var RookFrom = SQUARES.H1, RookTo = SQUARES.F1; break;
+				case SQUARES.G8: var RookFrom = SQUARES.H8, RookTo = SQUARES.F8; break;
 				default: break;
 			}
 
-			// Kiraly torlese + Bastya Mozgatasa
-			HighSQMask[from] ?
-			 xPiecesBB.High = (xPiecesBB.High ^ SetMask[to] ^ SetMask[RookFrom]) | SetMask[RookTo]
-			: xPiecesBB.Low = (xPiecesBB.Low  ^ SetMask[to] ^ SetMask[RookFrom]) | SetMask[RookTo];
+			// Bastya mozgatasa
+			us === BLACK ? xPiecesBB.Low  = (xPiecesBB.Low  ^ SetMask[RookFrom]) | SetMask[RookTo]
+			             : xPiecesBB.High = (xPiecesBB.High ^ SetMask[RookFrom]) | SetMask[RookTo];
 
 			// Hack: Bastya tamadas!
 			PCE = ROOK; to = RookTo;
@@ -1200,7 +1198,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		// Direkt Sakk?
+		// Direkt Sakk..?
 		if (PCE !== PAWN)
 		{
 			bb = PceAttacks(PCE, to);
@@ -1223,7 +1221,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			var epSq = us === BLACK ? to-8 : to+8;
 
 			// Ellenfel torlese
-			HighSQMask[epSq] ? xPiecesBB.High &= ClearMask[epSq] : xPiecesBB.Low &= ClearMask[epSq];
+			HighSQMask[epSq] ? xPiecesBB.High ^= SetMask[epSq] : xPiecesBB.Low ^= SetMask[epSq];
 
 			// Mogotte megnyilo mezok!
 			Beyond.Low  |= BehindBBMask[BetweenBBidx(King, epSq, LOW)];
@@ -1232,8 +1230,8 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		// Felfedezett Sakk?
-		if (Beyond.Low != 0 || Beyond.High != 0)
+		// Felfedezett Sakk..?
+		if (Beyond.Low | Beyond.High)
 		{
 			var b = { Low : 0, High : 0 };
 
@@ -1294,12 +1292,12 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		var King = brd_pieceList[(us | KING) << 4];
 
 		// Babu mozgatasa
-		HighSQMask[from] ? xPiecesBB.High &= ClearMask[from] : xPiecesBB.Low &= ClearMask[from];
-		HighSQMask[to]   ? xPiecesBB.High |= SetMask[to]     : xPiecesBB.Low |= SetMask[to];
+		HighSQMask[from] ? xPiecesBB.High ^= SetMask[from] : xPiecesBB.Low ^= SetMask[from];
+		HighSQMask[to]   ? xPiecesBB.High |= SetMask[to]   : xPiecesBB.Low |= SetMask[to];
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		var Beyond = Behind(King, from); // Babu mogott megnyilo mezok
+		var Beyond = Behind(King, from); // Babu mogott megnyilo mezok!
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -1309,7 +1307,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			var epSq = us === BLACK ? to-8 : to+8;
 
 			// Ellenfel torlese
-			HighSQMask[epSq] ? xPiecesBB.High &= ClearMask[epSq] : xPiecesBB.Low &= ClearMask[epSq];
+			HighSQMask[epSq] ? xPiecesBB.High ^= SetMask[epSq] : xPiecesBB.Low ^= SetMask[epSq];
 
 			// Mogotte megnyilo mezok!
 			Beyond.Low  |= BehindBBMask[BetweenBBidx(King, epSq, LOW)];
@@ -1318,8 +1316,8 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		// Felfedezett Sakk?
-		if (Beyond.Low != 0 || Beyond.High != 0)
+		// Felfedezett Sakk..?
+		if (Beyond.Low | Beyond.High)
 		{
 			var b = { Low : 0, High : 0 };
 
@@ -1389,7 +1387,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		var bNumPawns   = brd_pieceCount[BLACK_PAWN];
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-	//								   DONTETLEN
+	//						DONTETLEN
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 		if (wNumPawns == 0 && bNumPawns == 0) { // Nincs Gyalog
@@ -1506,7 +1504,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		var bCanAttack = bNumQueens && (bNumKnights || bNumBishops || bNumRooks || bNumQueens >= 2);
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-	//								   BABUK ERTEKELESE
+	//						BABUK ERTEKELESE
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 	// Feher Kiraly
@@ -2409,7 +2407,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 	function EvalPawns(wPassedPawn, bPassedPawn) {
 
-		var PCE = 0
+		var PCE    = 0;
 		var scoreS = 0;
 		var scoreE = 0;
 
@@ -2417,9 +2415,9 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		PCE = brd_pieceList[pieceIdx++];
 		while (PCE != EMPTY)
 		{
-			var Open  = 0; // Nyitott
-			var Rank  = TableRanks[PCE];
-			var File  = TableFiles[PCE];
+			var Open = 0; // Nyitott
+			var Rank = TableRanks[PCE];
+			var File = TableFiles[PCE];
 			var bits  = 8-File << 2;
 			var mask  = 0xF << bits;
 			var lRank = (LeastWhitePawn & mask) >>> bits;
@@ -2468,9 +2466,9 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		PCE = brd_pieceList[pieceIdx++];
 		while (PCE != EMPTY)
 		{
-			var Open  = 0; // Nyitott
-			var Rank  = TableRanks[PCE];
-			var File  = TableFiles[PCE];
+			var Open = 0; // Nyitott
+			var Rank = TableRanks[PCE];
+			var File = TableFiles[PCE];
 			var bits  = 8-File << 2;
 			var mask  = 0xF << bits;
 			var lRank = (LeastBlackPawn & mask) >>> bits;
@@ -2994,14 +2992,16 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		for (bb = b.Low; bb != 0; bb = restBit(bb)) {
 			from = firstBitLow(bb);
 			if (LineIsEmpty(from, King, xPiecesBB) == 0) {
-				checks.Low |= SetMask[from];
-				unsafe.Low |= BetweenBBMask[BetweenBBidx(from, King, LOW)] | BehindBBMask[BetweenBBidx(from, King, LOW)];
+				checks.Low  |= SetMask[from];
+				unsafe.Low  |= BetweenBBMask[BetweenBBidx(from, King, LOW)]  | BehindBBMask[BetweenBBidx(from, King, LOW)];
+				unsafe.High |= BetweenBBMask[BetweenBBidx(from, King, HIGH)] | BehindBBMask[BetweenBBidx(from, King, HIGH)];
 			}
 		}
 		for (bb = b.High; bb != 0; bb = restBit(bb)) {
 			from = firstBitHigh(bb);
 			if (LineIsEmpty(from, King, xPiecesBB) == 0) {
 				checks.High |= SetMask[from];
+				unsafe.Low  |= BetweenBBMask[BetweenBBidx(from, King, LOW)]  | BehindBBMask[BetweenBBidx(from, King, LOW)];
 				unsafe.High |= BetweenBBMask[BetweenBBidx(from, King, HIGH)] | BehindBBMask[BetweenBBidx(from, King, HIGH)];
 			}
 		}
@@ -4222,13 +4222,13 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		for (var pce = 0; pce < 15; pce++) { // Babuk hasKey (En Passant: 0)
 			for (var sq = 0; sq < 64; sq++) {
-				PieceKeysLow[ (pce << 6) | sq] = RAND_32();
+				PieceKeysLow [(pce << 6) | sq] = RAND_32();
 				PieceKeysHigh[(pce << 6) | sq] = RAND_32();
 			}
 		}
 
 		for (var index = 0; index < 16; index++) { // Sancolas hashKey
-			CastleKeysLow[index]  = RAND_32();
+			CastleKeysLow [index] = RAND_32();
 			CastleKeysHigh[index] = RAND_32();
 		}
 	}
@@ -4285,11 +4285,11 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		for (var sq = 0; sq < 64; sq++) { // Babuk 
 			if (CHESS_BOARD[sq] != 0) {
-				brd_hashKeyLow  ^= PieceKeysLow[ (CHESS_BOARD[sq] << 6) | sq];
+				brd_hashKeyLow  ^= PieceKeysLow [(CHESS_BOARD[sq] << 6) | sq];
 				brd_hashKeyHigh ^= PieceKeysHigh[(CHESS_BOARD[sq] << 6) | sq];
 			}
 			if ((CHESS_BOARD[sq] & 0x07) == PAWN) { // Gyalog Key
-				brd_pawnKeyLow  ^= PieceKeysLow[ (CHESS_BOARD[sq] << 6) | sq];
+				brd_pawnKeyLow  ^= PieceKeysLow [(CHESS_BOARD[sq] << 6) | sq];
 				brd_pawnKeyHigh ^= PieceKeysHigh[(CHESS_BOARD[sq] << 6) | sq];
 			}
 		}
@@ -4300,11 +4300,11 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		}
 
 		if (EN_PASSANT != 0) { // En Passant
-			brd_hashKeyLow  ^= PieceKeysLow[EN_PASSANT];
+			brd_hashKeyLow  ^= PieceKeysLow [EN_PASSANT];
 			brd_hashKeyHigh ^= PieceKeysHigh[EN_PASSANT];
 		}
 
-		brd_hashKeyLow  ^= CastleKeysLow[castleRights]; // Sancolas
+		brd_hashKeyLow  ^= CastleKeysLow [castleRights]; // Sancolas
 		brd_hashKeyHigh ^= CastleKeysHigh[castleRights]; // Sancolas
 	}
 
