@@ -1387,7 +1387,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		var bNumPawns   = brd_pieceCount[BLACK_PAWN];
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-	//						DONTETLEN
+	//								DONTETLEN
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 		if (wNumPawns == 0 && bNumPawns == 0) { // Nincs Gyalog
@@ -1504,7 +1504,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		var bCanAttack = bNumQueens && (bNumKnights || bNumBishops || bNumRooks || bNumQueens >= 2);
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-	//						BABUK ERTEKELESE
+	//								BABUK ERTEKELESE
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 	// Feher Kiraly
@@ -2415,9 +2415,9 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		PCE = brd_pieceList[pieceIdx++];
 		while (PCE != EMPTY)
 		{
-			var Open = 0; // Nyitott
-			var Rank = TableRanks[PCE];
-			var File = TableFiles[PCE];
+			var Open  = 0; // Nyitott
+			var Rank  = TableRanks[PCE];
+			var File  = TableFiles[PCE];
 			var bits  = 8-File << 2;
 			var mask  = 0xF << bits;
 			var lRank = (LeastWhitePawn & mask) >>> bits;
@@ -2466,9 +2466,9 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		PCE = brd_pieceList[pieceIdx++];
 		while (PCE != EMPTY)
 		{
-			var Open = 0; // Nyitott
-			var Rank = TableRanks[PCE];
-			var File = TableFiles[PCE];
+			var Open  = 0; // Nyitott
+			var Rank  = TableRanks[PCE];
+			var File  = TableFiles[PCE];
 			var bits  = 8-File << 2;
 			var mask  = 0xF << bits;
 			var lRank = (LeastBlackPawn & mask) >>> bits;
