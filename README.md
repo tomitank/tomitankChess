@@ -37,7 +37,7 @@ Thanks:
 - Thanks Stockfish authors
 - Thanks VICE author
 - http://talkchess.com
-- https://chessprogramming.wikispaces.com/
+- https://www.chessprogramming.org/
 
 Links:
 -----------------------------
