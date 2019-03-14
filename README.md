@@ -23,11 +23,12 @@ Usage:
 
 Estimated level (CCRL 40/40):
 -----------------------------
-- 3.0: ~2800 elo (Strongest JavaScript Chess Engine /2019.01.14/)
-- 2.1: ~2700 elo (Strongest JavaScript Chess Engine /2018.11.26/)
-- 2.0: ~2700 elo (Strongest JavaScript Chess Engine /2018.07.11/)
+- 3.0: ~2780 elo (Strongest JavaScript Chess Engine /2019.01.14/)
+- 2.1: ~2660 elo (Strongest JavaScript Chess Engine /2018.11.26/)
+- 2.0: ~2660 elo (Strongest JavaScript Chess Engine /2018.07.11/)
 - 1.5: ~2590 elo (Strongest JavaScript Chess Engine /2017.12.03/)
 - 1.4: ~2550 elo (Strongest JavaScript Chess Engine /2017.09.30/)
+- [tomitankChess CCRL 40/40](http://ccrl.chessdom.com/ccrl/4040/cgi/compare_engines.cgi?family=tomitankChess&print=Rating+list&print=Results+table&print=LOS+table&print=Ponder+hit+table&print=Eval+difference+table&print=Comopp+gamenum+table&print=Overlap+table&print=Score+with+common+opponents)
 
 Thanks:
 -----------------------------
