@@ -39,4 +39,4 @@ Links:
 
 Have fun with tomitankChess!
 
-Tamás Kuzmics
+-Tamás Kuzmics
