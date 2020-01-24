@@ -23,22 +23,13 @@ Usage:
 
 Estimated level (CCRL 40/40):
 -----------------------------
+- 4.0: ~2800 elo (Strongest JavaScript Chess Engine /2020.01.24/)
 - 3.0: ~2780 elo (Strongest JavaScript Chess Engine /2019.01.14/)
 - 2.1: ~2660 elo (Strongest JavaScript Chess Engine /2018.11.26/)
 - 2.0: ~2660 elo (Strongest JavaScript Chess Engine /2018.07.11/)
 - 1.5: ~2590 elo (Strongest JavaScript Chess Engine /2017.12.03/)
 - 1.4: ~2550 elo (Strongest JavaScript Chess Engine /2017.09.30/)
 - [Click here to see all CCRL 40/40 results of tomitankChess](http://ccrl.chessdom.com/ccrl/4040/cgi/compare_engines.cgi?family=tomitankChess&print=Rating+list&print=Results+table&print=LOS+table&print=Ponder+hit+table&print=Eval+difference+table&print=Comopp+gamenum+table&print=Overlap+table&print=Score+with+common+opponents)
-
-Thanks:
------------------------------
-- Thanks Fabien Letouzey (Fruit and Senpai author)
-- Thanks Colin Jenkins (Lozza author)
-- Thanks Gary Linscott (garbochess)
-- Thanks Stockfish authors
-- Thanks VICE author
-- http://talkchess.com
-- https://www.chessprogramming.org/
 
 Links:
 -----------------------------
