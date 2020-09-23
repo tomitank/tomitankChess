@@ -15,14 +15,15 @@ Usage:
 
 - Web browser: tomitankChess runing with and without WebWorker as well. (Recommended: WebWorker)
   + Input (standard UCI commands) to the engine is posted as a message to the worker. Example:
-  + var tomitankChess = new Worker('tomitankChess.js'); 
+  + var tomitankChess = new Worker('tomitankChess.js');
   + tomitankChess.postMessage('ucinewgame');
   + tomitankChess.postMessage('go depth 12');
-  
+
  - JSUCI: https://sourceforge.net/projects/jsuci/
 
 Estimated level (CCRL 40/40):
 -----------------------------
+- 4.2: ~2830 elo (Strongest JavaScript Chess Engine /2020.09.24/)
 - 4.0: ~2820 elo (Strongest JavaScript Chess Engine /2020.01.24/)
 - 3.0: ~2780 elo (Strongest JavaScript Chess Engine /2019.01.14/)
 - 2.1: ~2660 elo (Strongest JavaScript Chess Engine /2018.11.26/)
