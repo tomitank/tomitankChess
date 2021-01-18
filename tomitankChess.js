@@ -927,7 +927,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 		MOVE_HISTORY[MoveCount] = { // Lepeselozmeny mentese
-			NN_HIDDEN_L : NN_HIDDEN_LAYER.slice(0), // copy!
+			NN_HIDDEN_L	: NN_HIDDEN_LAYER.slice(0), // copy!
 			capturedPCE	: CAPTURED_PIECE,
 			hashKeyHigh	: brd_hashKeyHigh,
 			pawnKeyHigh	: brd_pawnKeyHigh,
