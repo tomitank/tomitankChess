@@ -3601,6 +3601,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		process.stdin.setEncoding('utf8');
 		process.stdin.on('readable', function() {
 			onMessage({ data: process.stdin.read() });
+			process.stdin.resume();
 		});
 		process.stdin.on('end', function() {
 			process.exit();
@@ -3638,20 +3639,18 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 			var tokens  = [];
-			var spec_id = '';
 			var message = '';
-			var messageList = command.data.split('\n');
+			var msgList = command.data.split('\n');
 
-			for (var messageNum = 0; messageNum < messageList.length; messageNum++)
+			for (var msgNum = 0; msgNum < msgList.length; msgNum++)
 			{
-				message = messageList[messageNum].replace(/(\r\n|\n|\r)/gm,'');
+				message = msgList[msgNum].replace(/(\r\n|\n|\r)/gm,'');
 				message = message.trim();
 				message = message.replace(/\s+/g,' ');
 				tokens  = message.split(' ');
 				command = tokens[0];
 
-				if (!command)
-					continue;
+				if (!command) continue;
 
 				// ############################################################################################
 
@@ -3684,6 +3683,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 						InitEnginSearch(); // Engine Init
 						if (tokens[1] != undefined && tokens[1] == 'tanky') UI_HOST = HOST_TANKY; // TanKy
 						if (SideKeyLow == 0 && UI_HOST != HOST_TANKY) InitHashKeys(); // New HashKeys Init
+						onMessage({ data: 'position startpos' }); // Start position!
 
 					break;
 
@@ -3781,7 +3781,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 						sendMessage('id name tomitankChess '+VERSION);
 						sendMessage('id author Tamas Kuzmics');
-						sendMessage('option name Hash type spin default 32 min 1 max 256');
+						sendMessage('option name Hash type spin default 32 min 1 max 512');
 						sendMessage('uciok');
 
 					break;
