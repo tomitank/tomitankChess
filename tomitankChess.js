@@ -1,5 +1,5 @@
 /*
- tomitankChess 5.0 Copyright (C) 2017-2021 Tamás Kuzmics - tomitank
+ tomitankChess 5.0 Copyright (C) 2017-2021 Tamas Kuzmics - tomitank
  Mail: tanky.hu@gmail.com
  Date: 2021.01.18.
 
@@ -3620,19 +3620,17 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 	var onMessage = function(command) {
 
-		if (command !== null)
+		if (command !== null && command.data !== undefined)
 		{
-			if (UI_HOST == HOST_TANKY && command.data.constructor === Array) // TanKy UI
+			if (command.data.constructor === Array && command.data[0] == 'HashKeys') // TanKy UI
 			{
-				if (command.data[0] == 'HashKeys') // HashKey Szinkronizalas
-				{
-					SideKeyLow = command.data[1];
-					SideKeyHigh = command.data[2];
-					PieceKeysLow = command.data[3];
-					PieceKeysHigh = command.data[4];
-					CastleKeysLow = command.data[5];
-					CastleKeysHigh = command.data[6];
-				}
+				UI_HOST = HOST_TANKY;
+				SideKeyLow = command.data[1];
+				SideKeyHigh = command.data[2];
+				PieceKeysLow = command.data[3];
+				PieceKeysHigh = command.data[4];
+				CastleKeysLow = command.data[5];
+				CastleKeysHigh = command.data[6];
 				return;
 			}
 
@@ -3681,9 +3679,8 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 					case 'ucinewgame':
 
 						InitEnginSearch(); // Engine Init
-						if (tokens[1] != undefined && tokens[1] == 'tanky') UI_HOST = HOST_TANKY; // TanKy
-						if (SideKeyLow == 0 && UI_HOST != HOST_TANKY) InitHashKeys(); // New HashKeys Init
-						onMessage({ data: 'position startpos' }); // Start position!
+						if (SideKeyLow == 0 && UI_HOST != HOST_TANKY) InitHashKeys();
+						onMessage({ data: 'position startpos' }); // Start position..
 
 					break;
 
@@ -3703,7 +3700,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 						MOVE_HISTORY = new Array(); // Lepes elozmenyek torlese
 						START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -';
 
-						var arr = getArr('fen', 'moves', tokens); // FEN Parameterek
+						var arr = getArr('fen', 'moves', tokens); // FEN parameterek
 
 						if (arr.lo > 0) {
 							if (arr.lo <= arr.hi) START_FEN  =     tokens[arr.lo]; arr.lo++; // CHESS_BOARD
@@ -3734,7 +3731,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 					case 'go':
 
-					    MaxSearchTime  = getInt('movetime', 0, tokens); // Time
+					    MaxSearchTime  = getInt('movetime', 0, tokens); // Time!
 					    MinSearchTime  = MaxSearchTime * 1; // Hack: Early exit!
 					var maxSearchDepth = getInt('depth'   , 0, tokens); // Depth
 
@@ -3781,7 +3778,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 						sendMessage('id name tomitankChess '+VERSION);
 						sendMessage('id author Tamas Kuzmics');
-						sendMessage('option name Hash type spin default 32 min 1 max 512');
+						sendMessage('option name Hash type spin default 32 min 1 max 1024');
 						sendMessage('uciok');
 
 					break;
