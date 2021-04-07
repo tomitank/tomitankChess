@@ -1426,7 +1426,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		var bNumPawns   = brd_pieceCount[BLACK_PAWN];
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-	//						          DONTETLEN
+	//						         DONTETLEN
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 		if (wNumPawns == 0 && bNumPawns == 0) { // Nincs Gyalog
@@ -1534,7 +1534,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		var bCanAttack = bNumQueens && (bNumKnights || bNumBishops || bNumRooks || bNumQueens >= 2);
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-	//						            BABUK ERTEKELESE
+	//						           BABUK ERTEKELESE
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 	// Feher Kiraly
@@ -3468,7 +3468,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 			console.log('depth: '+depth+ ' score: '+score+' nodes: '+Nodes+' time: '+time+' pv:'+pvLine);*/
 		}
-		else // WebWorker, Node.js, JSUCI
+		else // Worker, Node.js, JSUCI
 		{
 			var time = (Date.now() - StartTime); // Keresesi ido
 
@@ -3504,7 +3504,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 	function sendMessage(msg) {
 		if (UI_HOST == HOST_NODEJS) { // Node.js
 			nodefs.writeSync(1, msg+'\n');
-		} else if (UI_HOST != HOST_WEB) { // WebWorker, JSUCI
+		} else if (UI_HOST != HOST_WEB) { // Worker, JSUCI
 			postMessage(msg);
 		}
 	}
@@ -3518,7 +3518,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 	var HOST_WORKER = 4;
 	var UI_HOST = HOST_WEB;
 
-	if (typeof Worker != 'undefined') { // WebWorker
+	if (typeof WorkerGlobalScope != 'undefined') { // Worker
 
 		UI_HOST = HOST_WORKER;
 
