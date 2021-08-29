@@ -3702,7 +3702,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 						sendMessage('id name tomitankChess '+VERSION);
 						sendMessage('id author Tamas Kuzmics');
-						sendMessage('option name Hash type spin default 32 min 1 max 512');
+						sendMessage('option name Hash type spin default 32 min 1 max 256');
 						sendMessage('uciok');
 
 					break;
