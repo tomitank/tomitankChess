@@ -23,7 +23,8 @@ Usage:
 
 Estimated level (CCRL 40/40):
 -----------------------------
-- 5.0: ~2915 elo (Strongest JavaScript Chess Engine /2021.01.18/)
+- 5.1: ~2920 elo (Strongest JavaScript Chess Engine /2021.08.08/)
+- 5.0: ~2900 elo (Strongest JavaScript Chess Engine /2021.01.18/)
 - 4.2: ~2830 elo (Strongest JavaScript Chess Engine /2020.09.24/)
 - 4.0: ~2820 elo (Strongest JavaScript Chess Engine /2020.01.24/)
 - 3.0: ~2780 elo (Strongest JavaScript Chess Engine /2019.01.14/)

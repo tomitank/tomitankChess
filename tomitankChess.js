@@ -3532,9 +3532,8 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		UI_HOST = HOST_NODEJS;
 		var nodefs = require('fs');
 		process.stdin.setEncoding('utf8');
-		process.stdin.on('readable', function() {
-			onMessage({ data: process.stdin.read() });
-			process.stdin.resume();
+		process.stdin.on('data', function(data) {
+			onMessage({ data: data });
 		});
 		process.stdin.on('end', function() {
 			process.exit();
@@ -3547,7 +3546,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-	var uci_options = { 'Hash' : '32' };
+	var uci_options = { 'Hash': '32' };
 
 	var onMessage = function(command) {
 
@@ -3829,7 +3828,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		var from = FROMSQ(Move);
 
 		msg += Letters[TableFiles[from]-1]+''+TableRanks[from]; // Ahonnan
-		msg += Letters[TableFiles[to]-1]+''+TableRanks[to]; // Ahova
+		msg += Letters[TableFiles  [to]-1]+''+TableRanks  [to]; // Ahova
 
 		if (PROMOTED(Move) != 0) { // Promocio
 			msg += ['', '', 'n', 'b', 'r', 'q', ''][PROMOTED(Move) & 0x07];
@@ -3854,22 +3853,18 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 	function getInt(key, def, tokens) {
-
 		for (var index = 0; index < tokens.length; index++)
 			if (tokens[index] == key)
 				if (index < tokens.length - 1)
 					return parseInt(tokens[index+1]);
-
 		return def;
 	}
 
 	function getStr(key, def, tokens) {
-
 		for (var index = 0; index < tokens.length; index++)
 			if (tokens[index] == key)
 				if (index < tokens.length - 1)
 					return tokens[index+1];
-
 		return def;
 	}
 
@@ -3882,12 +3877,11 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 				hi = lo;
 				for (var j = lo; j < tokens.length; j++) {
 					if (tokens[j] == to)
-					break;
+						break;
 					hi = j;
 				}
 			}
 		}
-
 		return { lo : lo, hi : hi };
 	}
 
