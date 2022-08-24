@@ -17,6 +17,8 @@ Usage:
   + Input (standard UCI commands) to the engine is posted as a message to the worker. Example:
   + var tomitankChess = new Worker('tomitankChess.js');
   + tomitankChess.postMessage('ucinewgame');
+  + tomitankChess.postMessage('isready');
+  + at this point you need to wait (eg with Promise) for readyok response
   + tomitankChess.postMessage('go depth 12');
 
  - JSUCI: https://sourceforge.net/projects/jsuci/
