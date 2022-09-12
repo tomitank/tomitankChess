@@ -50,7 +50,7 @@ Changes log:
 -----------------------------
 - v5.1
   + network is trained with 4M example instead of 2.7M as in the previous version. (same size 768x16x1)
-  + better hash table usage
+  + better hash table usage (prune more in Qsearch as well, and improve hash store)
   + around 20 elo better than previous version
 
 - v5.0
