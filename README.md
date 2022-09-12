@@ -106,3 +106,11 @@ Changes log:
   + added "Hash option" (default 32 min 1 max 256)
   + added "eval" command (show the static evaluation)
   + lots of little things
+
+- v1.5
+  + New UI interface code (now working with JSUCI as well)
+  + Tuned Search algorithm
+  + Use TT at depth == 0
+
+- v1.4
+  + first public version
