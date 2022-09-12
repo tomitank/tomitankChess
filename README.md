@@ -54,7 +54,7 @@ Changes log:
   + around 20 elo better than previous version
 
 - v5.0
-  + network is only 768x16x1. Smaller than I've seen before.
+  + Added eval (NN)! Network size is only 768x16x1. Smaller than I've seen before.
   + it does not replace evaluation, it only compensates that.
   + trained only with 2.7M example.
   + The network is not compatible with other engines (*) and it's integrated into the code. (hardcoded)
