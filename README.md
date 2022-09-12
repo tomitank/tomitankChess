@@ -57,7 +57,7 @@ Changes log:
   + Added eval (NN)! Network size is only 768x16x1. Smaller than I've seen before.
   + it does not replace evaluation, it only compensates that.
   + trained only with 2.7M example.
-  + The network is not compatible with other engines (*) and it's integrated into the code. (hardcoded)
+  + The network is not compatible with other engines and it's integrated into the code. (hardcoded)
   + I wrote the network from scratch. I don't use machine learning platform.
   + I have around 10 elo better net (768x32x1) in fix depth test, but JavaScript is too slow, and don’t have AVX or similar methode in JavaScript (so i use vanilla approach). Essentially the smaller net has nearly the same strength in both short and long TC tests.
 
