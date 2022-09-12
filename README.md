@@ -88,7 +88,6 @@ Changes log:
   + Store eval score in hash
   + Smaller king-ring
   + Added logo.png
-  + Strength: similar to the previous version, maybe a bit stronger
 
 - v2.0
   + first full BitBoard JavaScript chess engine on the World
