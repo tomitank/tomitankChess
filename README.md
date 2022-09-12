@@ -45,3 +45,64 @@ Links:
 Have fun with tomitankChess!
 
 -Tamás Kuzmics
+
+Changes log:
+-----------------------------
+- v5.1
+  + network is trained with 4M example instead of 2.7M as in the previous version. (same size 768x16x1)
+  + better hash table usage
+  + around 20 elo better than previous version
+
+- v5.0
+  + network is only 768x16x1. Smaller than I've seen before.
+  + it does not replace evaluation, it only compensates that.
+  + trained only with 2.7M example.
+  + The network is not compatible with other engines (*) and it's integrated into the code. (hardcoded)
+  + I wrote the network from scratch. I don't use machine learning platform.
+  + I have around 10 elo better net (768x32x1) in fix depth test, but JavaScript is too slow, and don’t have AVX or similar methode in JavaScript (so i use vanilla approach). Essentially the smaller net has nearly the same strength in both short and long TC tests.
+
+- v4.2
+  + revisited code
+  + rewrite pawn eval
+  + fixed a bug that's caused problem in IE
+
+- v4.0
+  + see pruning
+  + better lmr
+  + rewrited pawn eval
+  + new pawn shield code
+  + new see (add discovered checks)
+  + lots of little things (revisited code)
+
+- v3.0
+  + new pawn shield code (idea from Senpai 2, but a bit better)
+  + use 3x3 squares king ring (idea from Senpai 2)
+  + new king safety code (simple, but bit better)
+  + all parameters scoring by logistic regression
+  + better time management (take more time when unsure)
+  + 4-way transposition table
+  + lots of little things (revisited code)
+
+- v2.1
+  + Revisited code (threats, move gen, some bug-fix, etc..)
+  + Store eval score in hash
+  + Smaller king-ring
+  + Added logo.png
+  + Strength: similar to the previous version, maybe a bit stronger
+
+- v2.0
+  + first full BitBoard JavaScript chess engine on the World
+  + added check evasions code
+  + added threats for all pieces
+  + added new passed pawn eval
+  + new King Safety (bigger and pawn-safe king ring)
+  + new non-linear and pawn-safe mobility (Same in mg and eg)
+  + better aspiration window
+  + a bit better delta pruning
+  + Don't give back the "upper bounds" moves
+  + pre-calculate and transmit the "gives check"
+  + added pawn hash (there is no elo gain yet, but it will be useful for a more complex pawn evaluation.)
+  + Typed Arrays Hash table for better memory usage
+  + added "Hash option" (default 32 min 1 max 256)
+  + added "eval" command (show the static evaluation)
+  + lots of little things
