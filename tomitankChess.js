@@ -4050,10 +4050,8 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			FEN += ' '+(Letters[TableFiles[EN_PASSANT]-1]+''+TableRanks[EN_PASSANT]);
 		}
 
-		FEN += ' 0'; // 50 Lepes szamlalo
-		FEN += ' 0'; // Osszes lepes
-
-	//	FEN += ' KQkq - 0 0'; // alap
+		FEN += ' '+brd_fiftyMove; // 50 lepes
+		FEN += ' '+(1 + (MoveCount - (CurrentPlayer === BLACK)) / 2); // Lepespar
 
 		return FEN;
 	}
@@ -4116,8 +4114,10 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		if (Fen[3] == '-') { // Nincs En Passant
 			EN_PASSANT = 0;
 		} else {
-			EN_PASSANT = parseInt(SQUARES[Fen[3].toUpperCase()]); // En Passant
+			EN_PASSANT = parseInt(SQUARES[Fen[3].toUpperCase()]);
 		}
+
+		brd_fiftyMove = Fen[4] != null ? Fen[4] : 0; // 50 lepes
 
 		InitChessNN(); // Halozat inicializalasa
 		InitPieceList(); // Babuk inicializalasa
