@@ -3563,7 +3563,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 			var tokens  = [];
 			var message = '';
-			var msgList = command.data.split('\n');
+			var msgList = command.data.toString().split('\n');
 
 			for (var msgNum = 0; msgNum < msgList.length; msgNum++)
 			{

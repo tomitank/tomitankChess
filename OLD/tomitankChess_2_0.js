@@ -763,7 +763,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		if ((fromPiece & 0x8) ^ currentPlayer) { // not your turn?
 			return false;
 		}
-		
+
 		if (toPiece && (toPiece & 0x8) === currentPlayer) { // cannot attack one of your own
 			return false;
 		}
@@ -1061,7 +1061,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			brd_fiftyMove = 0; // 50 lepes nullazasa
 			HASH_PCE(CAPTURED_PIECE, to);
 			DELETE_PCE(CAPTURED_PIECE, to, (currentPlayer^8));
-		} 
+		}
 		else if (move & CAPTURE_MASK) // En Passant Lepes
 		{
 			if (currentPlayer) // Fekete
@@ -4006,7 +4006,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 			// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-			var messageList = command.data.split('\n');
+			var messageList = command.data.toString().split('\n');
 
 			for (var messageNum = 0; messageNum < messageList.length; messageNum++)
 			{
@@ -4403,7 +4403,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		brd_pawnKeyLow  = 0; // pawnKey Low
 		brd_pawnKeyHigh = 0; // pawnKey High
 
-		for (var sq = 0; sq < 64; sq++) { // Babuk 
+		for (var sq = 0; sq < 64; sq++) { // Babuk
 			if (CHESS_BOARD[sq] != 0) {
 				brd_hashKeyLow  ^= PieceKeysLow[ (CHESS_BOARD[sq] << 6) | sq];
 				brd_hashKeyHigh ^= PieceKeysHigh[(CHESS_BOARD[sq] << 6) | sq];
