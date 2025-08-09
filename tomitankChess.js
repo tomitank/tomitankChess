@@ -3414,7 +3414,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		StartTime = Date.now(); // Kezdo ido!
 
-		if (UI_HOST == HOST_TANKY) sendMessage(['StartedTime', StartTime]); // Kuldes!
+		if (UI_HOST == HOST_TANKY) sendMessage('startedTime '+StartTime); // Kuldes!
 
 		search :
 
@@ -3438,7 +3438,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		}
 
 		if (UI_HOST == HOST_TANKY) {
-			sendMessage(['BestMove', BestMove]); // TanKy UI
+			sendMessage('bestmove '+JSON.stringify(BestMove)); // TanKy UI
 		} else {
 			sendMessage('bestmove '+FormatMove(BestMove.move));
 			sendMessage('info hashfull '+Math.round((1000*HashUsed) / HASHENTRIES));
@@ -3459,7 +3459,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		if (UI_HOST == HOST_TANKY) // TanKy UI
 		{
-			sendMessage(['SearchInfo', BestMove]); // Info kuldes
+			sendMessage('searchInfo '+BestMove); // Info kuldes
 
 			/*var time = (Date.now() - StartTime); // Keresesi ido
 
@@ -3613,7 +3613,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 						if (SideKeyLow == 0) { // Nincs HashKey
 							return (UI_HOST == HOST_TANKY)
-							? sendMessage(['debug', 'No HashKey! Inditsd ujra a jatekot!'])
+							? sendMessage('info string No HashKey! Inditsd ujra a jatekot!')
 							: sendMessage('info string First send a "u" command for New Game!');
 						}
 
