@@ -25,6 +25,7 @@ Usage:
 
 Estimated level (CCRL 40/40):
 -----------------------------
+- 5.2: same as 5.1 only the uci code changed
 - 5.1: ~2920 elo (Strongest JavaScript Chess Engine /2021.08.08/)
 - 5.0: ~2900 elo (Strongest JavaScript Chess Engine /2021.01.18/)
 - 4.2: ~2830 elo (Strongest JavaScript Chess Engine /2020.09.24/)
@@ -48,6 +49,9 @@ Have fun with tomitankChess!
 
 Changes log:
 -----------------------------
+- v5.2
+  + small refact on UCI code
+
 - v5.1
   + network is trained with 4M example instead of 2.7M as in the previous version. (same size 768x16x1)
   + better hash table usage (prune more in Qsearch as well, and improve hash store)

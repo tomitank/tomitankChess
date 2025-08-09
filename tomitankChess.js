@@ -1,7 +1,7 @@
 /*
- tomitankChess 5.1 Copyright (C) 2017-2021 Tamas Kuzmics - tomitank
+ tomitankChess 5.2 Copyright (C) 2017-2025 Tamas Kuzmics - tomitank
  Mail: tanky.hu@gmail.com
- Date: 2021.08.08.
+ Date: 2025.08.09.
 
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 'use strict';
 
 // Valtozok
-var VERSION         = '5.1';
+var VERSION         = '5.2';
 var Nodes           = 0; // Csomopont
 var HashUsed        = 0; // Hash szam
 var BoardPly        = 0; // Reteg szam
@@ -3414,7 +3414,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		StartTime = Date.now(); // Kezdo ido!
 
-		if (UI_HOST == HOST_TANKY) postMessage(['StartedTime', StartTime]); // Kuldes!
+		if (UI_HOST == HOST_TANKY) sendMessage(['StartedTime', StartTime]); // Kuldes!
 
 		search :
 
@@ -3438,7 +3438,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		}
 
 		if (UI_HOST == HOST_TANKY) {
-			postMessage(['BestMove', BestMove]); // TanKy UI
+			sendMessage(['BestMove', BestMove]); // TanKy UI
 		} else {
 			sendMessage('bestmove '+FormatMove(BestMove.move));
 			sendMessage('info hashfull '+Math.round((1000*HashUsed) / HASHENTRIES));
@@ -3459,7 +3459,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		if (UI_HOST == HOST_TANKY) // TanKy UI
 		{
-			postMessage(['SearchInfo', BestMove]); // Info kuldes
+			sendMessage(['SearchInfo', BestMove]); // Info kuldes
 
 			/*var time = (Date.now() - StartTime); // Keresesi ido
 
@@ -3511,6 +3511,8 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			nodefs.writeSync(1, msg+'\n');
 		} else if (UI_HOST != HOST_WEB) { // Worker, JSUCI
 			postMessage(msg);
+		} else if (typeof console !== 'undefined') {
+			console.log(msg);
 		}
 	}
 
@@ -3533,7 +3535,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		var nodefs = require('fs');
 		process.stdin.setEncoding('utf8');
 		process.stdin.on('data', function(data) {
-			onMessage({ data: data });
+			onMessage({data: data});
 		});
 		process.stdin.on('end', function() {
 			process.exit();
@@ -3552,20 +3554,6 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		if (command !== null && command.data !== undefined)
 		{
-			if (command.data.constructor === Array && command.data[0] == 'HashKeys') // TanKy UI
-			{
-				UI_HOST = HOST_TANKY;
-				SideKeyLow = command.data[1];
-				SideKeyHigh = command.data[2];
-				PieceKeysLow = command.data[3];
-				PieceKeysHigh = command.data[4];
-				CastleKeysLow = command.data[5];
-				CastleKeysHigh = command.data[6];
-				return;
-			}
-
-			// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
 			var tokens  = [];
 			var message = '';
 			var msgList = command.data.toString().split('\n');
@@ -3606,11 +3594,16 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 				switch (command) {
 
+					case 'tanky_worker':
+
+						UI_HOST = HOST_TANKY;
+
+					break;
+
 					case 'ucinewgame':
 
 						InitEnginSearch(); // Engine Init
-						if (SideKeyLow == 0 && UI_HOST != HOST_TANKY) InitHashKeys();
-						onMessage({ data: 'position startpos' }); // Start position..
+						if (SideKeyLow == 0) InitHashKeys();
 
 					break;
 
@@ -3619,10 +3612,9 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 					case 'position':
 
 						if (SideKeyLow == 0) { // Nincs HashKey
-							if (UI_HOST == HOST_TANKY)
-							return postMessage(['debug', 'No HashKey! Inditsd ujra a jatekot!']); // TanKy UI
-							else
-							return sendMessage('info string First send a "u" command for New Game!');
+							return (UI_HOST == HOST_TANKY)
+							? sendMessage(['debug', 'No HashKey! Inditsd ujra a jatekot!'])
+							: sendMessage('info string First send a "u" command for New Game!');
 						}
 
 						ClearForNewGame(); // Valtozok nullazasa
