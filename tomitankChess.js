@@ -3594,7 +3594,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 				switch (command) {
 
-					case 'tanky_worker':
+					case 'tankyworker':
 
 						UI_HOST = HOST_TANKY;
 
