@@ -3552,7 +3552,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 	var onMessage = function(command) {
 
-		if (command !== null && command.data !== undefined)
+		if (command !== null && command.data !== undefined && typeof command.data === "string")
 		{
 			var tokens  = [];
 			var message = '';
@@ -3759,14 +3759,6 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 					case 'board':
 
 						sendMessage('board '+boardToFEN());
-
-					break;
-
-				// ############################################################################################
-
-					case 'id':
-
-						spec_id = tokens[1];
 
 					break;
 
