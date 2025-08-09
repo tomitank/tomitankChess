@@ -3414,7 +3414,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		StartTime = Date.now(); // Kezdo ido!
 
-		if (UI_HOST == HOST_TANKY) sendMessage('startedTime '+StartTime); // Kuldes!
+		if (UI_HOST == HOST_TANKY) sendMessage('startedtime '+StartTime); // Kuldes!
 
 		search :
 
@@ -3437,12 +3437,8 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			}
 		}
 
-		if (UI_HOST == HOST_TANKY) {
-			sendMessage('bestmove '+JSON.stringify(BestMove)); // TanKy UI
-		} else {
-			sendMessage('bestmove '+FormatMove(BestMove.move));
-			sendMessage('info hashfull '+Math.round((1000*HashUsed) / HASHENTRIES));
-		}
+		sendMessage('bestmove '+FormatMove(BestMove.move));
+		sendMessage('info hashfull '+Math.round((1000*HashUsed) / HASHENTRIES));
 	}
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -3457,44 +3453,25 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		BestMove = { move : Move, score : score, depth : depth };
 
-		if (UI_HOST == HOST_TANKY) // TanKy UI
-		{
-			sendMessage('searchInfo '+BestMove); // Info kuldes
+		var time = (Date.now() - StartTime); // Keresesi ido
 
-			/*var time = (Date.now() - StartTime); // Keresesi ido
-
-			var pvLine = ''; // Pv
-			for (var index = 0; pv[index] != NOMOVE; index++) {
-				pvLine += ' '+FormatMove(pv[index]);
-			}
-
-			if (flags == FLAG_LOWER) depth += '+';
-			if (flags == FLAG_UPPER) depth += '-';
-
-			console.log('depth: '+depth+ ' score: '+score+' nodes: '+Nodes+' time: '+time+' pv:'+pvLine);*/
+		var pvLine = ''; // Pv
+		for (var index = 0; pv[index] != NOMOVE; index++) {
+			pvLine += ' '+FormatMove(pv[index]);
 		}
-		else // Worker, Node.js, JSUCI
-		{
-			var time = (Date.now() - StartTime); // Keresesi ido
 
-			var pvLine = ''; // Pv
-			for (var index = 0; pv[index] != NOMOVE; index++) {
-				pvLine += ' '+FormatMove(pv[index]);
-			}
-
-			if (score < -ISMATE) {
-				score = 'mate '+((-INFINITE - score) / 2); // -Matt
-			} else if (score > ISMATE) {
-				score = 'mate '+((INFINITE - score + 1) / 2); // +Matt
-			} else {
-				score = 'cp '+score;
-			}
-
-			if (flags == FLAG_LOWER) score += ' lowerbound';
-			if (flags == FLAG_UPPER) score += ' upperbound';
-
-			sendMessage('info depth '+depth+' score '+score+' nodes '+Nodes+' time '+time+' pv'+pvLine);
+		if (score < -ISMATE) {
+			score = 'mate '+((-INFINITE - score) / 2); // -Matt
+		} else if (score > ISMATE) {
+			score = 'mate '+((INFINITE - score + 1) / 2); // +Matt
+		} else {
+			score = 'cp '+score;
 		}
+
+		if (flags == FLAG_LOWER) score += ' lowerbound';
+		if (flags == FLAG_UPPER) score += ' upperbound';
+
+		sendMessage('info currmove '+FormatMove(Move)+' depth '+depth+' score '+score+' nodes '+Nodes+' time '+time+' pv'+pvLine);
 	}
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -3612,9 +3589,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 					case 'position':
 
 						if (SideKeyLow == 0) { // Nincs HashKey
-							return (UI_HOST == HOST_TANKY)
-							? sendMessage('info string No HashKey! Inditsd ujra a jatekot!')
-							: sendMessage('info string First send a "u" command for New Game!');
+							return sendMessage('info string First send a "u" command for New Game!');
 						}
 
 						ClearForNewGame(); // Valtozok nullazasa
