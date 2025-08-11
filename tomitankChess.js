@@ -3607,7 +3607,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 							START_FEN += ' '+((arr.lo <= arr.hi) ? tokens[arr.lo++] : '1'); // Full move
 						}
 
-						CHESS_BOARD = FENToBoard(); // Tabla betoltese
+						FENToBoard(); // CHESS_BOARD, BitBoard, HashKey, NN init..
 
 						var arr = getArr('moves', 'fen', tokens); // Lepesek
 
@@ -4018,7 +4018,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 	// FEN -> CHESS_BOARD
-	function FENToBoard() {
+	function FENToBoard(fenParam) {
 
 		var pieceValueMap = {
 			r: BLACK_ROOK,
@@ -4036,9 +4036,9 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			P: WHITE_PAWN
 		};
 
-		CHESS_BOARD = [];
+		var chessBoard = [];
 
-		var Fen = START_FEN.split(' ');
+		var Fen = (fenParam || START_FEN).split(' ');
 
 		for (var index = 0; index < Fen[0].length; index++) {
 
@@ -4048,13 +4048,20 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			}
 
 			if (isNaN(value)) { // Babuk feltoltese
-				CHESS_BOARD.push(pieceValueMap[value]);
+				chessBoard.push(pieceValueMap[value]);
 			} else {
 				for (var j = 0; j < parseInt(value, 10); j++) { // Ures mezok
-					CHESS_BOARD.push(0);
+					chessBoard.push(0);
 				}
 			}
 		}
+
+		if (fenParam) // only for testing..
+		{
+			return chessBoard;
+		}
+
+		CHESS_BOARD = chessBoard.slice(0); // clone..
 
 		CurrentPlayer = Fen[1] === 'w' ? WHITE : BLACK; // Kezdo!
 
