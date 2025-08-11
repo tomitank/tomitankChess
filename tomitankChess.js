@@ -117,7 +117,7 @@ var KingMoves       = [ 1, -1, 15, -15, 16, -16, 17, -17 ]; // Kiraly lepesek
 var BishopMoves     = [ 15, -15, 17, -17 ]; // Futo lepesek
 var RookMoves       = [ 1, -1, 16, -16 ]; // Bastya lepesek
 var Letters         = [ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' ]; // Betuzes
-var START_FEN       = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -';
+var START_FEN       = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 var nonSlider       = [ 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1 ]; // nonSlider (P, N, K)
 var PieceDir        = [ 0, 0, KnightMoves, BishopMoves, RookMoves, KingMoves, KingMoves ]; // Lepesek tomb
 var RANKS           = { RANK_1 : 1, RANK_2 : 2, RANK_3 : 3, RANK_4 : 4, RANK_5 : 5, RANK_6 : 6, RANK_7 : 7, RANK_8 : 8 }; // Sorok
@@ -3594,17 +3594,17 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 						ClearForNewGame(); // Valtozok nullazasa
 
-						START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -';
+						START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 						var arr = getArr('fen', 'moves', tokens); // FEN parameterek
 
 						if (arr.lo > 0) {
-							if (arr.lo <= arr.hi) START_FEN  =     tokens[arr.lo]; arr.lo++; // CHESS_BOARD
-							if (arr.lo <= arr.hi) START_FEN += ' '+tokens[arr.lo]; arr.lo++; // CurrentPlayer
-							if (arr.lo <= arr.hi) START_FEN += ' '+tokens[arr.lo]; arr.lo++; // CastleRights
-							if (arr.lo <= arr.hi) START_FEN += ' '+tokens[arr.lo]; arr.lo++; // En Passant
-							if (arr.lo <= arr.hi) START_FEN += ' '+parseInt(tokens[arr.lo]); arr.lo++; // 0
-							if (arr.lo <= arr.hi) START_FEN += ' '+parseInt(tokens[arr.lo]); arr.lo++; // 0
+							if (arr.lo <= arr.hi) START_FEN  =     tokens[arr.lo++]; // CHESS_BOARD
+							if (arr.lo <= arr.hi) START_FEN += ' '+tokens[arr.lo++]; // CurrentPlayer
+							if (arr.lo <= arr.hi) START_FEN += ' '+tokens[arr.lo++]; // CastleRights
+							START_FEN += ' '+((arr.lo <= arr.hi) ? tokens[arr.lo++] : '-'); // En Passant
+							START_FEN += ' '+((arr.lo <= arr.hi) ? tokens[arr.lo++] : '0'); // 50 move
+							START_FEN += ' '+((arr.lo <= arr.hi) ? tokens[arr.lo++] : '1'); // Full move
 						}
 
 						CHESS_BOARD = FENToBoard(); // Tabla betoltese
