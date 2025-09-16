@@ -3445,7 +3445,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		sendMessage('bestmove '+FormatMove(BestMove.move));
 		sendMessage('info hashfull '+Math.round((1000*HashUsed) / HASHENTRIES));
 		if (UI_HOST == HOST_TANKY) {
-			sendMessage('best4RootMove '+JSON.stringify(GetBest4RootMoves()));
+			sendMessage('best4rootmoves '+JSON.stringify(GetBest4RootMoves()));
 		}
 	}
 
