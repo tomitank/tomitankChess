@@ -43,6 +43,7 @@ var brd_hashKeyLow  = 0; // Aktualis hashKey also bit
 var brd_pawnKeyLow  = 0; // Aktualis pawnKey also bit
 var brd_hashKeyHigh = 0; // Aktualis hashKey felso bit
 var brd_pawnKeyHigh = 0; // Aktualis pawnKey felso bit
+var RootMovesResult = {}; // Elemzeshez MultiPv helyett
 var brd_PawnTable   = null; // Atultetesi tabla uresen
 var ShowEvalForUI   = false; // Ertelekes megjelenites
 var brd_Material    = new Array(9); // Anyagi ertekek
@@ -3267,6 +3268,10 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 				return 0;
 			}
 
+			if (BoardPly == 0) { // Elemzeshez mentjuk
+				RootMovesResult[currentMove] = { score : score, depth : depth };
+			}
+
 			if (score > bestScore) {
 
 				bestScore = score;
@@ -3378,6 +3383,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		ClearForSearch(); // Nullazas
 
+		RootMovesResult = {};
 		var alpha = -INFINITE;
 		var beta = INFINITE;
 		var countMove = 0;
@@ -3404,8 +3410,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			if (!isLegal(brd_moveList[index])) { // Ervenytelen lepes
 				continue;
 			}
-
-			countMove++; // Lepesek szamolasa
+			countMove++;
 		}
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
