@@ -3269,7 +3269,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			}
 
 			if (BoardPly == 0) { // Elemzeshez mentjuk
-				RootMovesResult[currentMove] = { score : score, depth : depth };
+				RootMovesResult[currentMove] = { score: score, depth: depth };
 			}
 
 			if (score > bestScore) {
@@ -3444,6 +3444,26 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		sendMessage('bestmove '+FormatMove(BestMove.move));
 		sendMessage('info hashfull '+Math.round((1000*HashUsed) / HASHENTRIES));
+		if (UI_HOST == HOST_TANKY) {
+			sendMessage('best4RootMove '+JSON.stringify(GetBest4RootMoves()));
+		}
+	}
+
+// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+	function GetBest4RootMoves() {
+		return Object.keys(RootMovesResult)
+		.map(function(x) {
+			return {
+				move: FormatMove(x),
+				score: RootMovesResult[x].score,
+				depth: RootMovesResult[x].depth
+			};
+		})
+		.sort(function(a, b) {
+			return b.score - a.score;
+		})
+		.slice(0, 4);
 	}
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
