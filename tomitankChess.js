@@ -3268,7 +3268,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 				return 0;
 			}
 
-			if (BoardPly == 0) { // Elemzeshez mentjuk
+			if (BoardPly == 0 && UI_HOST == HOST_TANKY) { // Elemzeshez
 				RootMovesResult[currentMove] = { score: score, depth: depth };
 			}
 
