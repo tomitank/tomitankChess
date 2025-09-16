@@ -49,6 +49,9 @@ Have fun with tomitankChess!
 
 Changes log:
 -----------------------------
+- v5.3
+  + add root moves result instead of multiPv for analysis
+
 - v5.2
   + small refact on UCI code
 
