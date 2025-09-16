@@ -1,7 +1,7 @@
 /*
- tomitankChess 5.2 Copyright (C) 2017-2025 Tamas Kuzmics - tomitank
+ tomitankChess 5.3 Copyright (C) 2017-2025 Tamas Kuzmics - tomitank
  Mail: tanky.hu@gmail.com
- Date: 2025.08.09.
+ Date: 2025.09.16.
 
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 'use strict';
 
 // Valtozok
-var VERSION         = '5.2';
+var VERSION         = '5.3';
 var Nodes           = 0; // Csomopont
 var HashUsed        = 0; // Hash szam
 var BoardPly        = 0; // Reteg szam

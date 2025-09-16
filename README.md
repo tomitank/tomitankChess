@@ -25,7 +25,7 @@ Usage:
 
 Estimated level (CCRL 40/40):
 -----------------------------
-- 5.2: same as 5.1 only the uci code changed
+- 5.3: same as 5.1 only the uci code changed
 - 5.1: ~2920 elo (Strongest JavaScript Chess Engine /2021.08.08/)
 - 5.0: ~2900 elo (Strongest JavaScript Chess Engine /2021.01.18/)
 - 4.2: ~2830 elo (Strongest JavaScript Chess Engine /2020.09.24/)
