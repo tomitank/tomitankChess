@@ -1,7 +1,7 @@
 /*
  tomitankChess 5.3 Copyright (C) 2017-2025 Tamas Kuzmics - tomitank
  Mail: tanky.hu@gmail.com
- Date: 2025.09.16.
+ Date: 2025.09.23.
 
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -3407,10 +3407,9 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		for (var index = brd_moveStart[0]; index < brd_moveStart[1]; index++)
 		{
-			if (!isLegal(brd_moveList[index])) { // Ervenytelen lepes
-				continue;
+			if (isLegal(brd_moveList[index])) { // Ervenytelen lepes
+				countMove++;
 			}
-			countMove++;
 		}
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -3637,12 +3636,9 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 						var arr = getArr('moves', 'fen', tokens); // Lepesek
 
 						if (arr.lo > 0 && tokens[arr.lo] != undefined) {
-
-							ClearForSearch(); // Hack: Kereses Nullazasa
-
 							for (var index = arr.lo; index <= arr.hi; index++) {
 								makeMove(GetMoveFromString(tokens[index]));
-								BoardPly = 0; // Hack!
+								BoardPly = 0; // reset after makeMove..
 							}
 						}
 
@@ -3824,14 +3820,25 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 	function GetMoveFromString(moveString) {
-
-		GenerateAllMoves(false, false);
-
-		for (var index = brd_moveStart[BoardPly]; index < brd_moveStart[BoardPly + 1]; index++) {
-			if (FormatMove(brd_moveList[index]) == moveString) {
-				return brd_moveList[index];
-			}
+		moveString = moveString.toUpperCase();
+		var promote = 0, capture = 0, castling = 0;
+		var from = SQUARES[moveString.substr(0, 2)];
+		var to   = SQUARES[moveString.substr(2, 2)];
+		var pieceType = CHESS_BOARD[from] & 0x07;
+		if (pieceType === KING && Math.abs(from - to) === 2 ? 1 : 0) {
+			castling = 1;
+		} else if (CHESS_BOARD[to] !== 0) {
+			capture = 1;
+		} else if (pieceType === PAWN && to === EN_PASSANT && EN_PASSANT !== 0) {
+			capture = 1;
 		}
+		switch (moveString.charAt(4)) {
+			case 'N': promote = CurrentPlayer|KNIGHT; break;
+			case 'B': promote = CurrentPlayer|BISHOP; break;
+			case 'R': promote = CurrentPlayer|ROOK; break;
+			case 'Q': promote = CurrentPlayer|QUEEN; break;
+		}
+		return BIT_MOVE(from, to, capture, promote, castling);
 	}
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
