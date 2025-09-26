@@ -1,7 +1,7 @@
 /*
  tomitankChess 5.3 Copyright (C) 2017-2025 Tamas Kuzmics - tomitank
  Mail: tanky.hu@gmail.com
- Date: 2025.09.23.
+ Date: 2025.09.26.
 
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -824,7 +824,8 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			return true;
 		}
 
-		for (var index = 4; index <= brd_fiftyMove; index += 2) {
+		var end = Math.min(MoveCount, brd_fiftyMove);
+		for (var index = 4; index <= end; index += 2) {
 			if (MOVE_HISTORY[MoveCount-index].hashKeyLow  == brd_hashKeyLow
 			 && MOVE_HISTORY[MoveCount-index].hashKeyHigh == brd_hashKeyHigh) {
 				return true;
