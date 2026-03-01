@@ -25,6 +25,7 @@ Usage:
 
 Estimated level (CCRL 40/40):
 -----------------------------
+- 5.4: ~3000 elo /2026.03.01/
 - 5.3: same as 5.1 only the uci code changed
 - 5.1: ~2920 elo (Strongest JavaScript Chess Engine /2021.08.08/)
 - 5.0: ~2900 elo (Strongest JavaScript Chess Engine /2021.01.18/)
@@ -35,7 +36,7 @@ Estimated level (CCRL 40/40):
 - 2.0: ~2660 elo (Strongest JavaScript Chess Engine /2018.07.11/)
 - 1.5: ~2590 elo (Strongest JavaScript Chess Engine /2017.12.03/)
 - 1.4: ~2550 elo (Strongest JavaScript Chess Engine /2017.09.30/)
-- [Click here to see all CCRL 40/40 results of tomitankChess](http://ccrl.chessdom.com/ccrl/4040/cgi/compare_engines.cgi?family=tomitankChess&print=Rating+list&print=Results+table&print=LOS+table&print=Ponder+hit+table&print=Eval+difference+table&print=Comopp+gamenum+table&print=Overlap+table&print=Score+with+common+opponents)
+- [Click here to see all CCRL 40/40 results of tomitankChess](https://computerchess.org.uk/ccrl/4040/cgi/compare_engines.cgi?family=tomitankChess&print=Rating+list&print=Results+table&print=LOS+table&print=Ponder+hit+table&print=Eval+difference+table&print=Comopp+gamenum+table&print=Overlap+table&print=Score+with+common+opponents)
 
 Links:
 -----------------------------
@@ -49,11 +50,26 @@ Have fun with tomitankChess!
 
 Changes log:
 -----------------------------
+- v5.4
+  + use Math.clz32 when available
+  + own native popcount64 wasm code when wasm is supported
+  + improve move sorting (use see only inside the move picker)
+  + use Typed Array rest of the code
+  + improve see a little bit
+  + more agressive nmp and razoring
+  + fix memory overflow after "ucinewgame" command (don't realloc tt table)
+  + fix "forfeits on time" in short time control (substract 50ms for lag)
+  + revisited and refactored code (would be better rewrite from scratch..)
+  + Eval is not changed (boring for me), still use HCE + small NN.
+  + 60% faster NPS, so tomitankChess play full of strength with same eval
+  + around 50 elo better than previous version
+
 - v5.3
   + add root moves result instead of multiPv for analysis
+  + maybe a bit stronger than 5.1
 
 - v5.2
-  + small refact on UCI code
+  + small refact on UCI code + fix three fold repetition code
 
 - v5.1
   + network is trained with 4M example instead of 2.7M as in the previous version. (same size 768x16x1)
