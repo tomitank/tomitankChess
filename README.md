@@ -25,7 +25,7 @@ Usage:
 
 Estimated level (CCRL 40/40):
 -----------------------------
-- 5.4: ~3000 elo /2026.03.01/
+- 6.0: ~3000 elo /2026.03.10/
 - 5.3: same as 5.1 only the uci code changed
 - 5.1: ~2920 elo (Strongest JavaScript Chess Engine /2021.08.08/)
 - 5.0: ~2900 elo (Strongest JavaScript Chess Engine /2021.01.18/)
@@ -50,7 +50,7 @@ Have fun with tomitankChess!
 
 Changes log:
 -----------------------------
-- v5.4
+- v6.0
   + use Math.clz32 when available
   + own native popcount64 wasm code when wasm is supported
   + improve move sorting (use see only inside the move picker)
