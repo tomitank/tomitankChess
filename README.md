@@ -63,6 +63,9 @@ Changes log:
   + Eval is not changed (boring for me), still use HCE + small NN.
   + 60% faster NPS, so tomitankChess play full of strength with same eval
   + around 50 elo better than previous version
+  + Known issues:
+  + Fifty-move repetition may incorrectly ignore mate positions
+  + Stop and quit commands are ignored in the Node.js environment
 
 - v5.3
   + add root moves result instead of multiPv for analysis
