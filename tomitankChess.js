@@ -1,7 +1,7 @@
 /*
- tomitankChess 5.3 Copyright (C) 2017-2025 Tamas Kuzmics - tomitank
+ tomitankChess 6.0 Copyright (C) 2017-2026 Tamas Kuzmics - tomitank
  Mail: tanky.hu@gmail.com
- Date: 2025.09.26.
+ Date: 2026.03.31.
 
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 'use strict';
 
 // Valtozok
-var VERSION         = '5.3';
+var VERSION         = '6.0';
 var Nodes           = 0; // Csomopont
 var HashUsed        = 0; // Hash szam
 var BoardPly        = 0; // Reteg szam
@@ -44,24 +44,23 @@ var brd_pawnKeyLow  = 0; // Aktualis pawnKey also bit
 var brd_hashKeyHigh = 0; // Aktualis hashKey felso bit
 var brd_pawnKeyHigh = 0; // Aktualis pawnKey felso bit
 var RootMovesResult = {}; // Elemzeshez MultiPv helyett
-var brd_PawnTable   = null; // Atultetesi tabla uresen
-var ShowEvalForUI   = false; // Ertelekes megjelenites
-var brd_Material    = new Array(9); // Anyagi ertekek
-var brd_pieceCount  = new Array(15); // Babuk szama
-var brd_pieceList   = new Array(240); // Babuk helyzete
-var brd_pieceIndex  = new Array(64); // Babuk azonositoja
-var SearchKillers   = new Array(MaxDepth); // Gyilkos lepesek
-var brd_moveList    = new Array(MaxDepth * 256); // Lepes lista
-var brd_moveScores  = new Array(MaxDepth * 256); // Lepes ertek
-var brd_moveStart   = new Array(MaxDepth + 1); // Tomb hatarolo
-var PieceKeysHigh   = new Array(16 * 64); // Babu hashKey felso
-var PieceKeysLow    = new Array(16 * 64); // Babu hashKey also
-var CastleKeysHigh  = new Array(16); // Sancolas hashKey felso
-var CastleKeysLow   = new Array(16); // Sancolas hashKey also
-var HistoryTable    = new Array(15); // Elozmeny tabla
-var DISTANCE        = new Array(64); // SQ Kulonbseg
+var brd_Material    = new Int32Array(9); // Anyagi ertekek
+var brd_pieceCount  = new Int32Array(15); // Babuk bKing+1
+var brd_pieceIndex  = new Int32Array(64); // Babu azonositok
+var brd_pieceList   = new Int32Array(240); // Babuk helyzete
+var brd_moveStart   = new Int32Array(MaxDepth + 1); // Lepes index
+var brd_moveList    = new Int32Array(MaxDepth * 256); // Lepes lista
+var brd_moveScores  = new Int32Array(MaxDepth * 256); // Lepes ertek
+var PlayedMoves     = new Int32Array(MaxDepth * 256); // History-hoz
+var PvLineMoves     = new Int32Array(MaxDepth * MaxDepth + 1); // Pv
+var SearchKillers   = new Int32Array(MaxDepth * 2); // Gyilkos lepes
+var HistoryTable    = new Int32Array(15 * 64); // Elozmeny [pce][sq]
+var PieceKeysHigh   = new Int32Array(15 * 64); // Babu hashKey felso
+var PieceKeysLow    = new Int32Array(15 * 64); // Babu hashKey also
+var CastleKeysHigh  = new Int32Array(16); // Sancolas hashKey felso
+var CastleKeysLow   = new Int32Array(16); // Sancolas hashKey also
+var DISTANCE        = new Int32Array(64 * 64); // SQ Kulonbseg
 var MOVE_HISTORY    = new Array(); // Lepeselozmeny
-brd_moveStart[0]    = 0; // Hack: Lepes lista index
 
 // Allandok
 var WHITE           = 0x0;
@@ -106,13 +105,14 @@ var DANGER_MASK     = 0x3F000; // Fontos lepes maszk
 var CASTLED_MASK    = 0x20000; // Sancolas jelzo maszk
 var TACTICAL_MASK   = 0x1F000; // Utes, Bevaltas maszk
 var ISMATE          = INFINITE - MaxDepth * 2; // Matt
-var PAWNENTRIES     = (1  << 12) /  1; // Gyalog hash max ~1 MB
+var PAWNENTRIES     = (1  << 12) /  1; // Gyalog hash meret ~104 KB
 var PAWNMASK        = PAWNENTRIES - 1; // Gyalog hash maszk, csak ketto hatvanya lehet
 var HASHENTRIES     = (32 << 20) / 16; // Hashtabla merete 32 MB / 1 Hash merete (16 byte)
 var HASHMASK        = HASHENTRIES - 4; // Hashtabla maszk, csak ketto hatvanya lehet & MASK
 var CASTLEBIT       = { WQ : 1, WK : 2, BQ : 4, BK : 8, W : 3, B : 12 }; // Sanc-ellenorzes
-var MvvLvaScores    = [ 0, 1, 2, 3, 4, 5, 6, 0, 0, 1, 2, 3, 4, 5, 6 ]; // Mvv-Lva Babuk erteke
-var SeeValue        = [ 0, 100, 325, 325, 500, 975, 20000, 0, 0, 100, 325, 325, 500, 975, 20000 ];
+var MvvLvaScores    = new Int16Array([ 0, 1, 2, 3, 4, 5, 6, 0, 0, 1, 2, 3, 4, 5, 6 ]); // Mvv-Lva Babuk erteke
+var MvvLvaScores100 = new Int16Array([ 0, 100, 200, 300, 400, 500, 600, 0, 0, 100, 200, 300, 400, 500, 600 ]);
+var SeeValue        = new Int16Array([ 0, 100, 325, 325, 500, 975, 20000, 0, 0, 100, 325, 325, 500, 975, 20000 ]);
 var KnightMoves     = [ 14, -14, 18, -18, 31, -31, 33, -33 ]; // Huszar lepesek
 var KingMoves       = [ 1, -1, 15, -15, 16, -16, 17, -17 ]; // Kiraly lepesek
 var BishopMoves     = [ 15, -15, 17, -17 ]; // Futo lepesek
@@ -124,36 +124,43 @@ var PieceDir        = [ 0, 0, KnightMoves, BishopMoves, RookMoves, KingMoves, Ki
 var RANKS           = { RANK_1 : 1, RANK_2 : 2, RANK_3 : 3, RANK_4 : 4, RANK_5 : 5, RANK_6 : 6, RANK_7 : 7, RANK_8 : 8 }; // Sorok
 var FILES           = { FILE_A : 1, FILE_B : 2, FILE_C : 3, FILE_D : 4, FILE_E : 5, FILE_F : 6, FILE_G : 7, FILE_H : 8 }; // Oszlopok
 
-// Typed Arrays for better memory usage. (16 byte)
-var hash_move       = new Uint32Array(HASHENTRIES);
-var hash_date       = new Uint16Array(HASHENTRIES);
-var hash_eval       = new Int16Array (HASHENTRIES);
-var hash_lock       = new Int32Array (HASHENTRIES);
-var hash_score      = new Int16Array (HASHENTRIES);
-var hash_flags      = new Uint8Array (HASHENTRIES);
-var hash_depth      = new Uint8Array (HASHENTRIES);
+// Hash table (16 byte / entry)
+var HashTableMove   = new Int32Array(HASHENTRIES);
+var HashTableDate   = new Int16Array(HASHENTRIES);
+var HashTableEval   = new Int16Array(HASHENTRIES);
+var HashTableLock   = new Int32Array(HASHENTRIES);
+var HashTableScore  = new Int16Array(HASHENTRIES);
+var HashTableFlags  = new Int8Array (HASHENTRIES);
+var HashTableDepth  = new Int8Array (HASHENTRIES);
+
+// Pawn hash table (26 byte / entry)
+var PawnHashEval    = new Int32Array(PAWNENTRIES);
+var PawnHashLock    = new Int32Array(PAWNENTRIES);
+var PawnHashPassW   = new Int8Array (PAWNENTRIES * 9);
+var PawnHashPassB   = new Int8Array (PAWNENTRIES * 9);
 
 // BitBoard
 var LOW             = 0; // Also 32 bit tomb index
 var HIGH            = 1; // Felso 32 bit tomb index
-var RankBBMask      = new Array(9); // Bitboard sor maszk
-var FileBBMask      = new Array(9); // Bitboard oszlop maszk
-var SetMask         = new Array(64); // Bitboard Mentes maszk
-var ClearMask       = new Array(64); // Bitboard Torles maszk
-var HighSQMask      = new Array(64); // Bitboard HighSQ maszk
-var BitFixLow       = new Array(64); // Bitboard BitFix maszk [LOW]
-var BitFixHigh      = new Array(64); // Bitboard BitFix maszk [HIGH]
-var IsolatedMask    = new Array(64); // Bitboard Isolated maszk
-var WhitePassedMask = new Array(64); // Bitboard Passed maszk Feher
-var BlackPassedMask = new Array(64); // Bitboard Passed maszk Fekete
-var WOpenFileMask   = new Array(64); // Bitboard OpenFile maszk Feher
-var BOpenFileMask   = new Array(64); // Bitboard OpenFile maszk Fekete
-var NeighbourMask   = new Array(64); // Bitboard Neighbour maszk Kozos
-var BlockerBBMask   = new Array(64 *  8 * 2); // Szelek kizaras maszk
-var AttackBBMask    = new Array(64 *  8 * 2); // Tamadas tombok maszk
-var BehindBBMask    = new Array(64 * 64 * 2); // A mezo mogotti maszk
-var BetweenBBMask   = new Array(64 * 64 * 2); // Ket mezo kozti maszk
-var BitBoard        = new Array(30); // Index: color/pce << 1 | Low/High
+var RankBBMask      = new Int32Array(9); // Bitboard sor maszk
+var FileBBMask      = new Int32Array(9); // Bitboard oszlop maszk
+var NFileBBMask     = new Int32Array(9); // Bitboard ~oszlop maszk
+var SetMask         = new Int32Array(64); // Bitboard Mentes maszk
+var ClearMask       = new Int32Array(64); // Bitboard Torles maszk
+var HighSQMask      = new Int32Array(64); // Bitboard HighSQ maszk
+var BitFixLow       = new Int32Array(64); // Bitboard BitFix maszk [LOW]
+var BitFixHigh      = new Int32Array(64); // Bitboard BitFix maszk [HIGH]
+var IsolatedMask    = new Int32Array(64); // Bitboard Isolated maszk
+var WhitePassedMask = new Int32Array(64); // Bitboard Passed maszk Feher
+var BlackPassedMask = new Int32Array(64); // Bitboard Passed maszk Fekete
+var WOpenFileMask   = new Int32Array(64); // Bitboard OpenFile maszk Feher
+var BOpenFileMask   = new Int32Array(64); // Bitboard OpenFile maszk Fekete
+var NeighbourMask   = new Int32Array(64); // Bitboard Neighbour maszk Kozos
+var BlockerBBMask   = new Int32Array(64 *  8 * 2); // Szelek kizaras maszk
+var AttackBBMask    = new Int32Array(64 *  8 * 2); // Tamadas tombok maszk
+var BehindBBMask    = new Int32Array(64 * 64 * 2); // A mezo mogotti maszk
+var BetweenBBMask   = new Int32Array(64 * 64 * 2); // Ket mezo kozti maszk
+var BitBoard        = new Int32Array(30); // Index: side/pce << 1 | Low/High
 
 var WhiteLow        = WHITE << 1 | LOW;
 var WhiteHigh       = WHITE << 1 | HIGH;
@@ -186,30 +193,32 @@ var bQueenHigh      = BLACK_QUEEN  << 1 | HIGH;
 var bKingHigh       = BLACK_KING   << 1 | HIGH;
 
 // Mezok elnevezese
-var SQUARES         = { A8:  0,     B8:  1,     C8:  2,     D8:  3,     E8:  4,     F8:  5,     G8:  6,     H8:  7,
-                        A7:  8,     B7:  9,     C7: 10,     D7: 11,     E7: 12,     F7: 13,     G7: 14,     H7: 15,
-                        A6: 16,     B6: 17,     C6: 18,     D6: 19,     E6: 20,     F6: 21,     G6: 22,     H6: 23,
-                        A5: 24,     B5: 25,     C5: 26,     D5: 27,     E5: 28,     F5: 29,     G5: 30,     H5: 31,
-                        A4: 32,     B4: 33,     C4: 34,     D4: 35,     E4: 36,     F4: 37,     G4: 38,     H4: 39,
-                        A3: 40,     B3: 41,     C3: 42,     D3: 43,     E3: 44,     F3: 45,     G3: 46,     H3: 47,
-                        A2: 48,     B2: 49,     C2: 50,     D2: 51,     E2: 52,     F2: 53,     G2: 54,     H2: 55,
-                        A1: 56,     B1: 57,     C1: 58,     D1: 59,     E1: 60,     F1: 61,     G1: 62,     H1: 63 };
+var SQUARES = {
+	A8:  0,     B8:  1,     C8:  2,     D8:  3,     E8:  4,     F8:  5,     G8:  6,     H8:  7,
+	A7:  8,     B7:  9,     C7: 10,     D7: 11,     E7: 12,     F7: 13,     G7: 14,     H7: 15,
+	A6: 16,     B6: 17,     C6: 18,     D6: 19,     E6: 20,     F6: 21,     G6: 22,     H6: 23,
+	A5: 24,     B5: 25,     C5: 26,     D5: 27,     E5: 28,     F5: 29,     G5: 30,     H5: 31,
+	A4: 32,     B4: 33,     C4: 34,     D4: 35,     E4: 36,     F4: 37,     G4: 38,     H4: 39,
+	A3: 40,     B3: 41,     C3: 42,     D3: 43,     E3: 44,     F3: 45,     G3: 46,     H3: 47,
+	A2: 48,     B2: 49,     C2: 50,     D2: 51,     E2: 52,     F2: 53,     G2: 54,     H2: 55,
+	A1: 56,     B1: 57,     C1: 58,     D1: 59,     E1: 60,     F1: 61,     G1: 62,     H1: 63 };
 
 // Kezdeti allapot
-var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLACK_KING, BLACK_BISHOP, BLACK_KNIGHT, BLACK_ROOK,
-                        BLACK_PAWN, BLACK_PAWN, BLACK_PAWN, BLACK_PAWN, BLACK_PAWN, BLACK_PAWN, BLACK_PAWN, BLACK_PAWN,
-                        0, 0, 0, 0, 0, 0, 0, 0,
-                        0, 0, 0, 0, 0, 0, 0, 0,
-                        0, 0, 0, 0, 0, 0, 0, 0,
-                        0, 0, 0, 0, 0, 0, 0, 0,
-                        WHITE_PAWN, WHITE_PAWN, WHITE_PAWN, WHITE_PAWN, WHITE_PAWN, WHITE_PAWN, WHITE_PAWN, WHITE_PAWN,
-                        WHITE_ROOK, WHITE_KNIGHT, WHITE_BISHOP, WHITE_QUEEN, WHITE_KING, WHITE_BISHOP, WHITE_KNIGHT, WHITE_ROOK ];
+var CHESS_BOARD = new Int8Array([
+	BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLACK_KING, BLACK_BISHOP, BLACK_KNIGHT, BLACK_ROOK,
+	BLACK_PAWN, BLACK_PAWN, BLACK_PAWN, BLACK_PAWN, BLACK_PAWN, BLACK_PAWN, BLACK_PAWN, BLACK_PAWN,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	WHITE_PAWN, WHITE_PAWN, WHITE_PAWN, WHITE_PAWN, WHITE_PAWN, WHITE_PAWN, WHITE_PAWN, WHITE_PAWN,
+	WHITE_ROOK, WHITE_KNIGHT, WHITE_BISHOP, WHITE_QUEEN, WHITE_KING, WHITE_BISHOP, WHITE_KNIGHT, WHITE_ROOK ]);
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 	function InitEvalMasks() {
 
-		if (SetMask[1] != undefined) { // Mar inicializaltunk!
+		if (SetMask[1] != 0) { // Mar inicializaltunk!
 			return false;
 		}
 
@@ -219,6 +228,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		for (sq = 0; sq < 8; sq++) {
 			FileBBMask[sq] = 0;
 			RankBBMask[sq] = 0;
+			NFileBBMask[sq] = 0;
 		}
 
 		// Sor + Oszlop feltoltes
@@ -227,6 +237,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			sq = (r - 1) * 8 + (8 - f);
 			FileBBMask[f] |= (1 << sq);
 			RankBBMask[r] |= (1 << sq);
+			NFileBBMask[f] = ~FileBBMask[f];
 		}
 
 		// Bitmaszkok nullazasa
@@ -263,13 +274,12 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			BitFixHigh[sq] = (sq > 31 ? sq - 32 :  0); // Felso bit kell?(0-Nem)
 
 			// Mezo tavolsag
-			DISTANCE[sq] = new Array(64);
 			var rank1 = TableRanks[sq];
 			var file1 = TableFiles[sq];
 			for (sq2 = 0; sq2 < 64; sq2++) {
 				var rank2 = TableRanks[sq2];
 				var file2 = TableFiles[sq2];
-				DISTANCE[sq][sq2] = Math.max(Math.abs(rank1-rank2), Math.abs(file1-file2));
+				DISTANCE[(sq << 6) | sq2] = Math.max(Math.abs(rank1-rank2), Math.abs(file1-file2));
 			}
 		}
 
@@ -329,11 +339,9 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 						AttackBBMask[AttackBBidx(pce, from, HighSQMask[next])] |= SetMask[next]; // Tamadas
 
 						if (pce === QUEEN) {
-
 							for (sq = from88 + delta; !(sq & 0x88) && sq != next88; sq += delta) {
 								BetweenBBMask[BetweenBBidx(from, next, HighSQMask[from_88(sq)])] |= SetMask[from_88(sq)]; // Koztes
 							}
-
 							for (sq = next88 + delta; !(sq & 0x88); sq += delta) {
 								BehindBBMask[BetweenBBidx(from, next, HighSQMask[from_88(sq)])] |= SetMask[from_88(sq)]; // Mogotte
 							}
@@ -351,16 +359,15 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			for (pce = KNIGHT; pce <= KING; pce++)
 			{
 				var attacks = PceAttacks(pce, from);
-
 				for (var bb = attacks.Low; bb != 0; bb = restBit(bb)) {
-					sq = firstBitLow(bb);
+					sq = firstBit(bb & -bb);
 					if ((attacks.Low & BehindBBMask[BetweenBBidx(from, sq, LOW)])  != 0
 					|| (attacks.High & BehindBBMask[BetweenBBidx(from, sq, HIGH)]) != 0) {
 						BlockerBBMask[AttackBBidx(pce, from, LOW)] |= SetMask[sq];
 					}
 				}
 				for (var bb = attacks.High; bb != 0; bb = restBit(bb)) {
-					sq = firstBitHigh(bb);
+					sq = firstBit(bb & -bb) + 32;
 					if ((attacks.Low & BehindBBMask[BetweenBBidx(from, sq, LOW)])  != 0
 					|| (attacks.High & BehindBBMask[BetweenBBidx(from, sq, HIGH)]) != 0) {
 						BlockerBBMask[AttackBBidx(pce, from, HIGH)] |= SetMask[sq];
@@ -406,36 +413,52 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		return b & (b - 1);
 	}
 
-	var BitIndexLow = [ // Mezok 0-31-ig
+	var BitIndexLow = new Int8Array([ // Mezok 0-31-ig
 	31, 30, 3, 29, 2, 17, 7, 28, 1, 9, 11, 16, 6, 14, 27, 23,
-	0, 4, 18, 8, 10, 12, 15, 24, 5, 19, 13, 25, 20, 26, 21, 22 ];
+	0, 4, 18, 8, 10, 12, 15, 24, 5, 19, 13, 25, 20, 26, 21, 22 ]);
 
-	function firstBitLow(b) {
-		return BitIndexLow[((b & -b) * 0x077CB531) >>> 27];
-	}
+	var firstBit = Math.clz32 || function(b) { // usage: b & -b
+		return BitIndexLow[(b * 0x077CB531) >>> 27];
+	};
 
-	var BitIndexHigh = [ // Mezok 32-63-ig
-	63, 62, 35, 61, 34, 49, 39, 60, 33, 41, 43, 48, 38, 46, 59, 55,
-	32, 36, 50, 40, 42, 44, 47, 56, 37, 51, 45, 57, 52, 58, 53, 54 ];
-
-	function firstBitHigh(b) {
-		return BitIndexHigh[((b & -b) * 0x077CB531) >>> 27];
-	}
-
-	function PopCount(b) { // for 32 bit
+	function PopCount(b) {
 		b = b - ((b >>> 1) & 0x55555555);
 		b = (b & 0x33333333) + ((b >>> 2) & 0x33333333);
-		return ((b + (b >>> 4) & 0x0F0F0F0F) * 0x01010101) >>> 24;
+		return (((b + (b >>> 4)) & 0x0F0F0F0F) * 0x01010101) >>> 24;
 	}
 
-	function SetBitBoard(sq, pce, color) {
-		BitBoard[pce   << 1 | HighSQMask[sq]] |= SetMask[sq];
-		BitBoard[color << 1 | HighSQMask[sq]] |= SetMask[sq];
+	function PopCount64(x, y) {
+		return PopCount(x) + PopCount(y);
 	}
 
-	function ClearBitBoard(sq, pce, color) {
-		BitBoard[pce   << 1 | HighSQMask[sq]] &= ClearMask[sq];
-		BitBoard[color << 1 | HighSQMask[sq]] &= ClearMask[sq];
+	// init WebAssembly functions
+	try {
+		var errorHandler = function() {
+			setTimeout(function() { sendMessage('info string WebAssembly not supported :('); }, 0);
+		};
+		var wasmBytes = new Uint8Array([ // popcount64
+			0,97,115,109,1,0,0,0,1,7,1,96,2,127,127,1,127,3,2,1,0,7,14,1,10,112,111,112,99,111,117,110,116,
+			54,52,0,0,10,11,1,9,0,32,0,105,32,1,105,106,11,0,16,4,110,97,109,101,2,9,1,0,2,0,1,48,1,1,49
+		]);
+		WebAssembly.compile(wasmBytes).then(function(module) {
+			WebAssembly.instantiate(module).then(function(instance) {
+				try {
+					PopCount64 = instance.exports.popcount64 || PopCount64;
+				} catch (e) {errorHandler();}
+			}).catch(errorHandler);
+		}).catch(errorHandler);
+	} catch (error) {
+		errorHandler();
+	}
+
+	function SetBitBoard(sq, pce, side) {
+		BitBoard[pce  << 1 | HighSQMask[sq]] |= SetMask[sq];
+		BitBoard[side << 1 | HighSQMask[sq]] |= SetMask[sq];
+	}
+
+	function ClearBitBoard(sq, pce, side) {
+		BitBoard[pce  << 1 | HighSQMask[sq]] &= ClearMask[sq];
+		BitBoard[side << 1 | HighSQMask[sq]] &= ClearMask[sq];
 	}
 
 	function DefendedByPawn(sq, sd) {
@@ -558,12 +581,20 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		return (BlackPassedMask[BitFixLow[sq]] & BitBoard[wPawnLow]) | (BlackPassedMask[sq] & BitBoard[wPawnHigh]);
 	}
 
-	function IsOpenFile(file, color) {
-		return (FileBBMask[file] & BitBoard[(color|PAWN) << 1 | LOW]) | (FileBBMask[file] & BitBoard[(color|PAWN) << 1 | HIGH]);
+	function IsWhiteOpenFile(file) {
+		return (FileBBMask[file] & BitBoard[wPawnLow]) | (FileBBMask[file] & BitBoard[wPawnHigh]);
 	}
 
-	function IsolatedPawn(sq, color) {
-		return (IsolatedMask[sq] & BitBoard[(color|PAWN) << 1 | LOW]) | (IsolatedMask[sq] & BitBoard[(color|PAWN) << 1 | HIGH]);
+	function IsBlackOpenFile(file) {
+		return (FileBBMask[file] & BitBoard[bPawnLow]) | (FileBBMask[file] & BitBoard[bPawnHigh]);
+	}
+
+	function IsolatedWhitePawn(sq) {
+		return (IsolatedMask[sq] & BitBoard[wPawnLow]) | (IsolatedMask[sq] & BitBoard[wPawnHigh]);
+	}
+
+	function IsolatedBlackPawn(sq) {
+		return (IsolatedMask[sq] & BitBoard[bPawnLow]) | (IsolatedMask[sq] & BitBoard[bPawnHigh]);
 	}
 
 	function PawnOnSeventh() {
@@ -581,11 +612,18 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 	function from_88(sq) { return (sq + (sq & 0x07)) >> 1; }
 
+	function SquareColour(sq) { return ((sq >> 3) ^ sq) & 1; }
+
 	function BetweenBBidx(s1, s2, bit) { return (s1 << 7) | (s2 << 1) | bit; }
 
 	function AttackBBidx(pce, sq, bit) { return (sq << 4) | (pce << 1) | bit; }
 
-	function LineIsEmpty(s1, s2, pieces) {
+	function SliderAttackers(sq, side, bit) {
+		return ((AttackBBMask[AttackBBidx(ROOK,   sq, bit)] & (BitBoard[(side|ROOK)   << 1 | bit] | BitBoard[(side|QUEEN) << 1 | bit])) |
+				(AttackBBMask[AttackBBidx(BISHOP, sq, bit)] & (BitBoard[(side|BISHOP) << 1 | bit] | BitBoard[(side|QUEEN) << 1 | bit])));
+	}
+
+	function LineBlocker(s1, s2, pieces) {
 		return (pieces.Low & BetweenBBMask[BetweenBBidx(s1, s2, LOW)]) | (pieces.High & BetweenBBMask[BetweenBBidx(s1, s2, HIGH)]);
 	}
 
@@ -605,8 +643,8 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		return { Low : BehindBBMask[BetweenBBidx(s1, s2, LOW)], High : BehindBBMask[BetweenBBidx(s1, s2, HIGH)] };
 	}
 
-	function AllPceByColor(color) {
-		return { Low : BitBoard[color << 1 | LOW], High : BitBoard[color << 1 | HIGH] };
+	function AllPceBySide(side) {
+		return { Low : BitBoard[side << 1 | LOW], High : BitBoard[side << 1 | HIGH] };
 	}
 
 	function KingZone(Ring, Rank, File) { // 3x3 square
@@ -628,14 +666,13 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		var bb, sq;
 		var attacks = PceAttacks(pce, from);
 		var blocker = PceBlocker(pce, from);
-
 		for (bb = pieces.Low & blocker.Low; bb != 0; bb = restBit(bb)) {
-			sq = firstBitLow(bb);
+			sq = firstBit(bb & -bb);
 			attacks.Low  &= ~BehindBBMask[BetweenBBidx(from, sq, LOW)];
 			attacks.High &= ~BehindBBMask[BetweenBBidx(from, sq, HIGH)];
 		}
 		for (bb = pieces.High & blocker.High; bb != 0; bb = restBit(bb)) {
-			sq = firstBitHigh(bb);
+			sq = firstBit(bb & -bb) + 32;
 			attacks.Low  &= ~BehindBBMask[BetweenBBidx(from, sq, LOW)];
 			attacks.High &= ~BehindBBMask[BetweenBBidx(from, sq, HIGH)];
 		}
@@ -644,16 +681,16 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 	function wPawnAttacks(attacks) {
 		// Hack: backward instead of forward on white side!
-		attacks.High |= ((BitBoard[wPawnHigh] & ~FileBBMask[FILES.FILE_A]) >>> 7) | ((BitBoard[wPawnHigh] & ~FileBBMask[FILES.FILE_H]) >>> 9);
-		attacks.Low  |= ((BitBoard[wPawnLow]  & ~FileBBMask[FILES.FILE_H])  << 7) | ((BitBoard[wPawnLow]  & ~FileBBMask[FILES.FILE_A])  << 9);
+		attacks.High |= ((BitBoard[wPawnHigh] & NFileBBMask[FILES.FILE_A]) >>> 7) | ((BitBoard[wPawnHigh] & NFileBBMask[FILES.FILE_H]) >>> 9);
+		attacks.Low  |= ((BitBoard[wPawnLow]  & NFileBBMask[FILES.FILE_H])  << 7) | ((BitBoard[wPawnLow]  & NFileBBMask[FILES.FILE_A])  << 9);
 		attacks.Low  |= (attacks.High >>> 16); // Add 5th rank attacks to Low
 		attacks.High <<= 16; // Hack: forward 2x
 	}
 
 	function bPawnAttacks(attacks) {
 		// Hack: backward instead of forward on black side!
-		attacks.Low  |= ((BitBoard[bPawnLow]  & ~FileBBMask[FILES.FILE_H])  << 7) | ((BitBoard[bPawnLow]  & ~FileBBMask[FILES.FILE_A])  << 9);
-		attacks.High |= ((BitBoard[bPawnHigh] & ~FileBBMask[FILES.FILE_A]) >>> 7) | ((BitBoard[bPawnHigh] & ~FileBBMask[FILES.FILE_H]) >>> 9);
+		attacks.Low  |= ((BitBoard[bPawnLow]  & NFileBBMask[FILES.FILE_H])  << 7) | ((BitBoard[bPawnLow]  & NFileBBMask[FILES.FILE_A])  << 9);
+		attacks.High |= ((BitBoard[bPawnHigh] & NFileBBMask[FILES.FILE_A]) >>> 7) | ((BitBoard[bPawnHigh] & NFileBBMask[FILES.FILE_H]) >>> 9);
 		attacks.High |= (attacks.Low  << 16); // Add 4th rank attacks to High
 		attacks.Low  >>>= 16; // Hack: forward 2x
 	}
@@ -692,7 +729,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			promote = side|QUEEN;
 		}
 
-	// Casling..?
+	// Castling..?
 		var castling = 0;
 		if (pieceType === KING && Math.abs(from - to) === 2) {
 			castling = 1;
@@ -724,8 +761,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			HighSQMask[next] ? attacks.High = SetMask[next] | NeighbourMask[next]
 			                 : attacks.Low  = SetMask[next] | NeighbourMask[next];
 
-			if (TableRanks[from] == (side ? RANKS.RANK_7 : RANKS.RANK_2))
-			{
+			if (TableRanks[from] == (side ? RANKS.RANK_7 : RANKS.RANK_2)) {
 				HighSQMask[next + inc] ? attacks.High |= SetMask[next + inc]
 				                       : attacks.Low  |= SetMask[next + inc];
 			}
@@ -743,39 +779,38 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 	function StoreHash(move, score, _eval, flags, depth) { // Hash mentes
 
 		var index = brd_hashKeyLow & HASHMASK;
-
 		var oldest = -1;
 		var update =  0;
 
-		for (var entry = index; entry < index + 4; entry++) {
+		for (var entry = index; entry < index + 4; entry++)
+		{
+			if (HashTableLock[entry] == brd_hashKeyHigh) {
 
-			if (hash_lock[entry] == brd_hashKeyHigh) {
-
-				if (hash_depth[entry] <= depth) {
+				if (HashTableDepth[entry] <= depth) {
 					if (move == NOMOVE) {
-						move = hash_move[entry];
+						move = HashTableMove[entry];
 					}
 					update = entry;
 					break;
 				}
 
-				if (hash_move[entry] == NOMOVE && move != NOMOVE) { // update!
-					hash_move[entry] = move;
+				if (HashTableMove[entry] == NOMOVE && move != NOMOVE) { // update!
+					HashTableMove[entry] = move;
 				}
 
-				hash_date[entry] = HashDate; // update age of deeper entry!
+				HashTableDate[entry] = HashDate; // update age of deeper entry!
 
 				return;
 			}
 
-			var age = (HashDate - hash_date[entry]) * 65 + 65 - hash_depth[entry];
+			var age = (HashDate - HashTableDate[entry]) * 65 + 65 - HashTableDepth[entry];
 			if (oldest < age) {
 				oldest = age;
 				update = entry;
 			}
 		}
 
-		if (hash_lock[update] == 0) { // new
+		if (HashTableLock[update] == 0) { // new
 			HashUsed++;
 		}
 
@@ -785,13 +820,13 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			score -= BoardPly;
 		}
 
-		hash_move [update] = move;
-		hash_eval [update] = _eval;
-		hash_score[update] = score;
-		hash_flags[update] = flags;
-		hash_depth[update] = depth;
-		hash_date [update] = HashDate;
-		hash_lock [update] = brd_hashKeyHigh;
+		HashTableMove [update] = move;
+		HashTableEval [update] = _eval;
+		HashTableScore[update] = score;
+		HashTableFlags[update] = flags;
+		HashTableDepth[update] = depth;
+		HashTableDate [update] = HashDate;
+		HashTableLock [update] = brd_hashKeyHigh;
 	}
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -800,28 +835,31 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		var index = brd_hashKeyLow & HASHMASK;
 
-		for (var entry = index; entry < index + 4; entry++) {
-
-			if (hash_lock[entry] == brd_hashKeyHigh) {
+		for (var entry = index; entry < index + 4; entry++)
+		{
+			if (HashTableLock[entry] == brd_hashKeyHigh) {
 				return {
-					move  : hash_move [entry],
-					eval  : hash_eval [entry],
-					score : hash_score[entry],
-					flags : hash_flags[entry],
-					depth : hash_depth[entry]
+					move  : HashTableMove [entry],
+					eval  : HashTableEval [entry],
+					score : HashTableScore[entry],
+					flags : HashTableFlags[entry],
+					depth : HashTableDepth[entry]
 				};
 			}
 		}
-
 		return NOMOVE;
 	}
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-	function IsRepetition() { // Lepesismetles + 50 lepesszabaly
+	function GetDrawValue() { // 3 lepesismetles vaksag ellen
+		return 2 * (Nodes & 1) - 1;
+	}
+
+	function IsRepetition(inCheck) { // Lepesismetles + 50 lepesszabaly
 
 		if (brd_fiftyMove >= 100) { // TODO: mate?
-			return true;
+			return brd_fiftyMove > 100 || !inCheck;
 		}
 
 		var end = Math.min(MoveCount, brd_fiftyMove);
@@ -831,7 +869,6 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 				return true;
 			}
 		}
-
 		return false;
 	}
 
@@ -868,23 +905,23 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		ClearBitBoard(from, pce, (pce & 0x8));
 		SetBitBoard(to, pce, (pce & 0x8));
 	}
-	function ADDING_PCE(pce, sq, currentPlayer) {
+	function ADDING_PCE(pce, sq, side) {
 		CHESS_BOARD[sq] = pce; // Babu hozzadasa
 		brd_pieceIndex[sq] = brd_pieceCount[pce];
 		brd_pieceList[(pce << 4) | brd_pieceIndex[sq]] = sq;
-		brd_Material[currentPlayer] += PieceValue[pce];
+		brd_Material[side] += PieceValue[pce];
 		brd_pieceCount[pce]++; // Darabszam novelese
-		SetBitBoard(sq, pce, currentPlayer);
+		SetBitBoard(sq, pce, side);
 	}
-	function DELETE_PCE(pce, sq, currentPlayer) {
+	function DELETE_PCE(pce, sq, side) {
 		CHESS_BOARD[sq] = 0; // Babu torlese
 		brd_pieceCount[pce]--; // Darabszam csokkentese
 		var lastPceSquare = brd_pieceList[(pce << 4) | brd_pieceCount[pce]];
 		brd_pieceIndex[lastPceSquare] = brd_pieceIndex[sq];
 		brd_pieceList[(pce << 4) | brd_pieceIndex[lastPceSquare]] = lastPceSquare;
 		brd_pieceList[(pce << 4) | brd_pieceCount[pce]] = EMPTY; // Ures
-		brd_Material[currentPlayer] -= PieceValue[pce];
-		ClearBitBoard(sq, pce, currentPlayer);
+		brd_Material[side] -= PieceValue[pce];
+		ClearBitBoard(sq, pce, side);
 	}
 	function BIT_MOVE(from, to, captured, promoted, castled) {
 		return (from | (to << 6) | (captured << 12) | (promoted << 13) | (castled << 17)); // Lepes: 18 bit
@@ -912,8 +949,13 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
+		for (var neuron = 0; neuron < HIDDEN_NEURONS; neuron++) {
+			HIDDEN_HISTORY[(MoveCount << 4) | neuron] = NN_HIDDEN_LAYER[neuron];
+		}
+
+		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
 		MOVE_HISTORY[MoveCount] = { // Lepeselozmeny mentese
-			NN_HIDDEN_L	: NN_HIDDEN_LAYER.slice(0), // copy!
 			capturedPCE	: CAPTURED_PIECE,
 			hashKeyHigh	: brd_hashKeyHigh,
 			pawnKeyHigh	: brd_pawnKeyHigh,
@@ -929,33 +971,30 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		brd_fiftyMove++; // 50 lepes szabaly
 
-		if (EN_PASSANT != 0) HASH_EP(); // En Passant hashKey
+		if (EN_PASSANT != 0) { // En-passant reset
+			EN_PASSANT = 0;
+			HASH_EP();
+		}
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 		if (CAPTURED_PIECE) // Ha leutottunk valakit
 		{
-			brd_fiftyMove = 0; // 50 lepes nullazasa
+			brd_fiftyMove = 0; // reset
+		    var them = CurrentPlayer ^ 8;
 			HASH_PCE(CAPTURED_PIECE, to);
-			DELETE_PCE(CAPTURED_PIECE, to, (CurrentPlayer^8));
-			DELETE_NN_PCE(CAPTURED_PIECE, to, (CurrentPlayer^8));
+			DELETE_PCE(CAPTURED_PIECE, to, them);
+			DELETE_NN_PCE(CAPTURED_PIECE, to, them);
 		}
 		else if (move & CAPTURE_MASK) // En Passant Lepes
 		{
-			if (CurrentPlayer) // Fekete
-			{
-				EN_PASSANT = to-8; // Hack: Koztes tarolo
-				HASH_PCE(WHITE_PAWN, EN_PASSANT);
-				DELETE_PCE(WHITE_PAWN, EN_PASSANT, WHITE);
-				DELETE_NN_PCE(WHITE_PAWN, EN_PASSANT, WHITE);
-			}
-			else // Feher
-			{
-				EN_PASSANT = to+8; // Hack: Koztes tarolo
-				HASH_PCE(BLACK_PAWN, EN_PASSANT);
-				DELETE_PCE(BLACK_PAWN, EN_PASSANT, BLACK);
-				DELETE_NN_PCE(BLACK_PAWN, EN_PASSANT, BLACK);
-			}
+			brd_fiftyMove = 0; // reset
+		    var them = CurrentPlayer ^ 8;
+			var capturedPawn = them|PAWN;
+            var pawnSquare = to + (them ? 8 : -8);
+			HASH_PCE(capturedPawn, pawnSquare);
+			DELETE_PCE(capturedPawn, pawnSquare, them);
+            DELETE_NN_PCE(capturedPawn, pawnSquare, them);
 		}
 		else if (move & CASTLED_MASK) // Sancolaskor Bastya mozgatasa
 		{
@@ -987,27 +1026,22 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 				default: break;
 			}
 		}
-
-		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-		EN_PASSANT = 0; // En passant torles
-
-		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-		if ((MOVED_PIECE & 0x07) === PAWN) // Ha Gyaloggal leptunk
+		else if ((MOVED_PIECE & 0x07) === PAWN) // Ha Gyaloggal leptunk
 		{
-			brd_fiftyMove = 0; // 50 lepes nullazasa
+			brd_fiftyMove = 0; // reset
 
-			if (Math.abs(from - to) === 16) // En Passant mentese
+			if (Math.abs(from - to) === 16) // En Passant csak ha tamadjak..
 			{
-				EN_PASSANT = (to + (CurrentPlayer ? -8 : 8));
-				HASH_EP(); // En Passant hashKey
+				if (NeighbourMask[to] & BitBoard[CurrentPlayer ? wPawnLow : bPawnHigh]) {
+					EN_PASSANT = (to + (CurrentPlayer ? -8 : 8));
+					HASH_EP(); // En Passant hashKey
+				}
 			}
 		}
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		MOVE_NN_PCE(MOVED_PIECE, from, to); // Babu mozgatasa
+		DELETE_NN_PCE(MOVED_PIECE, from, CurrentPlayer); // Babu mozgatasa
 		MOVE_PCE(MOVED_PIECE, from, to);
 		HASH_PCE(MOVED_PIECE, from);
 		HASH_PCE(MOVED_PIECE, to);
@@ -1020,8 +1054,11 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			HASH_PCE(PROMOTED_PIECE, to);
 			DELETE_PCE(MOVED_PIECE, to, CurrentPlayer);
 			ADDING_PCE(PROMOTED_PIECE, to, CurrentPlayer);
-			DELETE_NN_PCE(MOVED_PIECE, to, CurrentPlayer);
 			ADDING_NN_PCE(PROMOTED_PIECE, to, CurrentPlayer);
+		}
+		else
+		{
+			ADDING_NN_PCE(MOVED_PIECE, to, CurrentPlayer);
 		}
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -1049,6 +1086,12 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
+		for (var neuron = 0; neuron < HIDDEN_NEURONS; neuron++) {
+			NN_HIDDEN_LAYER[neuron] = HIDDEN_HISTORY[(MoveCount << 4) | neuron];
+		}
+
+		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
 		var move = MOVE_HISTORY[MoveCount].move;
 		EN_PASSANT = MOVE_HISTORY[MoveCount].epSquare;
 		CastleRights = MOVE_HISTORY[MoveCount].castleBIT;
@@ -1057,7 +1100,6 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		brd_pawnKeyLow = MOVE_HISTORY[MoveCount].pawnKeyLow;
 		brd_hashKeyHigh = MOVE_HISTORY[MoveCount].hashKeyHigh;
 		brd_pawnKeyHigh = MOVE_HISTORY[MoveCount].pawnKeyHigh;
-		NN_HIDDEN_LAYER = MOVE_HISTORY[MoveCount].NN_HIDDEN_L;
 		var CAPTURED_PIECE = MOVE_HISTORY[MoveCount].capturedPCE;
 
 		var to = TOSQ(move);
@@ -1100,7 +1142,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		if (PROMOTED_PIECE != 0) // Gyalog bevaltasanak visszavonasa
 		{
 			DELETE_PCE(PROMOTED_PIECE, from, CurrentPlayer);
-			ADDING_PCE((CurrentPlayer | PAWN), from, CurrentPlayer);
+			ADDING_PCE(CurrentPlayer|PAWN, from, CurrentPlayer);
 		}
 	}
 
@@ -1115,11 +1157,12 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			epSquare	: EN_PASSANT
 		};
 
-		if (EN_PASSANT != 0) HASH_EP();
-
+		if (EN_PASSANT != 0) {
+			EN_PASSANT = 0;
+			HASH_EP();
+		}
 		CurrentPlayer ^= 8;
 		brd_fiftyMove = 0;
-		EN_PASSANT = 0;
 		HASH_SIDE();
 	}
 
@@ -1128,9 +1171,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 	function unMakeNullMove() {
 
 		MoveCount--;
-
 		CurrentPlayer ^= 8;
-
 		EN_PASSANT = MOVE_HISTORY[MoveCount].epSquare;
 		brd_fiftyMove = MOVE_HISTORY[MoveCount].fiftyMove;
 		brd_hashKeyLow = MOVE_HISTORY[MoveCount].hashKeyLow;
@@ -1147,13 +1188,13 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 	function isMate(score) { return score > ISMATE || score < -ISMATE; }
 
-	function isCheck(Side) { return isSquareUnderAttack(brd_pieceList[(Side | KING) << 4], Side); }
+	function isCheck(Side) { return isSquareUnderAttack(brd_pieceList[(Side|KING) << 4], Side); }
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 	function isSquareUnderAttack(target, us) {
 
-		var bb, from, them = us^8;
+		var bb, them = us^8;
 
 		// Gyalog tamadas
 		if (us === BLACK ? DefendedByWPawn(target) : DefendedByBPawn(target)) {
@@ -1161,40 +1202,26 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		}
 
 		// Huszar tamadas
-		bb = PceAttacks(KNIGHT, target);
-		if (bb.Low & BitBoard[(them|KNIGHT) << 1 | LOW]
-		|| bb.High & BitBoard[(them|KNIGHT) << 1 | HIGH]) {
+		if (AttackBBMask[AttackBBidx(KNIGHT, target, LOW)] & BitBoard[(them|KNIGHT) << 1 | LOW]
+		|| AttackBBMask[AttackBBidx(KNIGHT, target, HIGH)] & BitBoard[(them|KNIGHT) << 1 | HIGH]) {
 			return 1;
 		}
 
 		// Kiraly tamadas
-		bb = PceAttacks(KING, target);
-		if (bb.Low & BitBoard[(them|KING) << 1 | LOW]
-		|| bb.High & BitBoard[(them|KING) << 1 | HIGH]) {
+		if (AttackBBMask[AttackBBidx(KING, target, LOW)] & BitBoard[(them|KING) << 1 | LOW]
+		|| AttackBBMask[AttackBBidx(KING, target, HIGH)] & BitBoard[(them|KING) << 1 | HIGH]) {
 			return 1;
 		}
 
 		// Futo, Bastya, Vezer
 		var xPiecesBB = GetAllPce();
-		var b = { Low : 0, High : 0 };
-
-		// Futo & Vezer tamadas
-		bb = PceAttacks(BISHOP, target);
-		b.Low  |= bb.Low  & (BitBoard[(them|BISHOP) << 1 | LOW]  | BitBoard[(them|QUEEN) << 1 | LOW]);
-		b.High |= bb.High & (BitBoard[(them|BISHOP) << 1 | HIGH] | BitBoard[(them|QUEEN) << 1 | HIGH]);
-
-		// Bastya & Vezer tamadas
-		bb = PceAttacks(ROOK, target);
-		b.Low  |= bb.Low  & (BitBoard[(them|ROOK) << 1 | LOW]  | BitBoard[(them|QUEEN) << 1 | LOW]);
-		b.High |= bb.High & (BitBoard[(them|ROOK) << 1 | HIGH] | BitBoard[(them|QUEEN) << 1 | HIGH]);
-
-		for (bb = b.Low; bb != 0; bb = restBit(bb)) {
-			from = firstBitLow(bb);
-			if (LineIsEmpty(from, target, xPiecesBB) == 0) return 1;
+		for (bb = SliderAttackers(target, them, LOW); bb != 0; bb = restBit(bb))
+		{
+			if (LineBlocker(firstBit(bb & -bb), target, xPiecesBB) == 0) return 1;
 		}
-		for (bb = b.High; bb != 0; bb = restBit(bb)) {
-			from = firstBitHigh(bb);
-			if (LineIsEmpty(from, target, xPiecesBB) == 0) return 1;
+		for (bb = SliderAttackers(target, them, HIGH); bb != 0; bb = restBit(bb))
+		{
+			if (LineBlocker(firstBit(bb & -bb) + 32, target, xPiecesBB) == 0) return 1;
 		}
 
 		return NOT_IN_CHECK;
@@ -1227,7 +1254,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		var bb, them = us^8;
 		var xPiecesBB = GetAllPce();
-		var King = brd_pieceList[(them | KING) << 4];
+		var King = brd_pieceList[(them|KING) << 4];
 
 		// Babu mozgatasa
 		HighSQMask[from] ? xPiecesBB.High ^= SetMask[from] : xPiecesBB.Low ^= SetMask[from];
@@ -1235,23 +1262,21 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		// Sancolas
+		// Sancolas: Bastya mozgatasa
 		if (move & CASTLED_MASK)
 		{
 			switch (to) {
-				case SQUARES.C1: var RookFrom = SQUARES.A1, RookTo = SQUARES.D1; break;
-				case SQUARES.C8: var RookFrom = SQUARES.A8, RookTo = SQUARES.D8; break;
-				case SQUARES.G1: var RookFrom = SQUARES.H1, RookTo = SQUARES.F1; break;
-				case SQUARES.G8: var RookFrom = SQUARES.H8, RookTo = SQUARES.F8; break;
+				case SQUARES.C1: from = SQUARES.A1; to = SQUARES.D1; break;
+				case SQUARES.C8: from = SQUARES.A8; to = SQUARES.D8; break;
+				case SQUARES.G1: from = SQUARES.H1; to = SQUARES.F1; break;
+				case SQUARES.G8: from = SQUARES.H8; to = SQUARES.F8; break;
 				default: break;
 			}
 
-			// Bastya mozgatasa
-			us === BLACK ? xPiecesBB.Low  = (xPiecesBB.Low  ^ SetMask[RookFrom]) | SetMask[RookTo]
-			             : xPiecesBB.High = (xPiecesBB.High ^ SetMask[RookFrom]) | SetMask[RookTo];
+			us === BLACK ? xPiecesBB.Low  = (xPiecesBB.Low  ^ SetMask[from]) | SetMask[to]
+			             : xPiecesBB.High = (xPiecesBB.High ^ SetMask[from]) | SetMask[to];
 
-			// Hack: Bastya tamadas!
-			PCE = ROOK; to = RookTo;
+			PCE = ROOK; // Hack: Bastya tamadas!
 		}
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -1259,11 +1284,10 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		// Direkt Sakk..?
 		if (PCE !== PAWN)
 		{
-			bb = PceAttacks(PCE, to);
-			if (bb.Low & BitBoard[(them|KING) << 1 | LOW]
-			|| bb.High & BitBoard[(them|KING) << 1 | HIGH])
+			if (AttackBBMask[AttackBBidx(PCE, to, LOW)] & BitBoard[(them|KING) << 1 | LOW]
+			|| AttackBBMask[AttackBBidx(PCE, to, HIGH)] & BitBoard[(them|KING) << 1 | HIGH])
 			{
-				if (LineIsEmpty(to, King, xPiecesBB) == 0) return 1;
+				if (LineBlocker(to, King, xPiecesBB) == 0) return 1;
 			}
 		}
 
@@ -1289,28 +1313,15 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 		// Felfedezett Sakk..?
-		if (Beyond.Low | Beyond.High)
+		if (Beyond.Low)
+		for (bb = SliderAttackers(King, us, LOW) & Beyond.Low; bb != 0; bb = restBit(bb))
 		{
-			var b = { Low : 0, High : 0 };
-
-			// Futo & Vezer tamadas
-			bb = PceAttacks(BISHOP, King);
-			b.Low  |= bb.Low  & (BitBoard[(us|BISHOP) << 1 | LOW]  | BitBoard[(us|QUEEN) << 1 | LOW]);
-			b.High |= bb.High & (BitBoard[(us|BISHOP) << 1 | HIGH] | BitBoard[(us|QUEEN) << 1 | HIGH]);
-
-			// Bastya & Vezer tamadas
-			bb = PceAttacks(ROOK, King);
-			b.Low  |= bb.Low  & (BitBoard[(us|ROOK) << 1 | LOW]  | BitBoard[(us|QUEEN) << 1 | LOW]);
-			b.High |= bb.High & (BitBoard[(us|ROOK) << 1 | HIGH] | BitBoard[(us|QUEEN) << 1 | HIGH]);
-
-			for (bb = b.Low & Beyond.Low; bb != 0; bb = restBit(bb)) {
-				from = firstBitLow(bb);
-				if (LineIsEmpty(from, King, xPiecesBB) == 0) return 1;
-			}
-			for (bb = b.High & Beyond.High; bb != 0; bb = restBit(bb)) {
-				from = firstBitHigh(bb);
-				if (LineIsEmpty(from, King, xPiecesBB) == 0) return 1;
-			}
+			if (LineBlocker(firstBit(bb & -bb), King, xPiecesBB) == 0) return 1;
+		}
+		if (Beyond.High)
+		for (bb = SliderAttackers(King, us, HIGH) & Beyond.High; bb != 0; bb = restBit(bb))
+		{
+			if (LineBlocker(firstBit(bb & -bb) + 32, King, xPiecesBB) == 0) return 1;
 		}
 
 		return NOT_IN_CHECK;
@@ -1343,7 +1354,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 		var xPiecesBB = GetAllPce();
-		var King = brd_pieceList[(us | KING) << 4];
+		var King = brd_pieceList[(us|KING) << 4];
 
 		// Babu mozgatasa
 		HighSQMask[from] ? xPiecesBB.High ^= SetMask[from] : xPiecesBB.Low ^= SetMask[from];
@@ -1371,28 +1382,15 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 		// Felfedezett Sakk..?
-		if (Beyond.Low | Beyond.High)
-		{
-			var b = { Low : 0, High : 0 };
-
-			// Futo & Vezer tamadas
-			bb = PceAttacks(BISHOP, King);
-			b.Low  |= bb.Low  & (BitBoard[(them|BISHOP) << 1 | LOW]  | BitBoard[(them|QUEEN) << 1 | LOW]);
-			b.High |= bb.High & (BitBoard[(them|BISHOP) << 1 | HIGH] | BitBoard[(them|QUEEN) << 1 | HIGH]);
-
-			// Bastya & Vezer tamadas
-			bb = PceAttacks(ROOK, King);
-			b.Low  |= bb.Low  & (BitBoard[(them|ROOK) << 1 | LOW]  | BitBoard[(them|QUEEN) << 1 | LOW]);
-			b.High |= bb.High & (BitBoard[(them|ROOK) << 1 | HIGH] | BitBoard[(them|QUEEN) << 1 | HIGH]);
-
-			for (bb = b.Low & Beyond.Low; bb != 0; bb = restBit(bb)) {
-				from = firstBitLow(bb);
-				if (LineIsEmpty(from, King, xPiecesBB) == 0 && from != to) return false;
-			}
-			for (bb = b.High & Beyond.High; bb != 0; bb = restBit(bb)) {
-				from = firstBitHigh(bb);
-				if (LineIsEmpty(from, King, xPiecesBB) == 0 && from != to) return false;
-			}
+		if (Beyond.Low)
+		for (bb = SliderAttackers(King, them, LOW) & Beyond.Low; bb != 0; bb = restBit(bb)) {
+			from = firstBit(bb & -bb);
+			if (from != to && LineBlocker(from, King, xPiecesBB) == 0) return false;
+		}
+		if (Beyond.High)
+		for (bb = SliderAttackers(King, them, HIGH) & Beyond.High; bb != 0; bb = restBit(bb)) {
+			from = firstBit(bb & -bb) + 32;
+			if (from != to && LineBlocker(from, King, xPiecesBB) == 0) return false;
 		}
 
 		return true;
@@ -1404,11 +1402,11 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		var bb           = 0; // bb
 		var mob          = 0; // Mob
-		var Rank         = 0; // Sor
 		var PCE          = 0; // Babu
-		var File         = 0; // Oszlop
-		var Phase        = 24; // Fazis
-		var Draw         = 1; // Dontetlen
+		var rank         = 0; // Sor
+		var file         = 0; // Oszlop
+		var wForce       = 0; // Feher ero
+		var bForce       = 0; // Fekete ero
 		var pieceIdx     = 0; // Babu index
 		var wAttackPower = 0; // Tamadas pont Feher
 		var bAttackPower = 0; // Tamadas pont Fekete
@@ -1417,113 +1415,23 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		var wNumQueens  = brd_pieceCount[WHITE_QUEEN];
-		var wNumRooks   = brd_pieceCount[WHITE_ROOK];
-		var wNumBishops = brd_pieceCount[WHITE_BISHOP];
-		var wNumKnights = brd_pieceCount[WHITE_KNIGHT];
-		var wNumPawns   = brd_pieceCount[WHITE_PAWN];
-
-		var bNumQueens  = brd_pieceCount[BLACK_QUEEN];
-		var bNumRooks   = brd_pieceCount[BLACK_ROOK];
-		var bNumBishops = brd_pieceCount[BLACK_BISHOP];
-		var bNumKnights = brd_pieceCount[BLACK_KNIGHT];
-		var bNumPawns   = brd_pieceCount[BLACK_PAWN];
-
-	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-	//						         DONTETLEN
-	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-		if (wNumPawns == 0 && bNumPawns == 0) { // Nincs Gyalog
-			if (wNumQueens == 0 && bNumQueens == 0) { // Nincs Vezer
-				if (wNumRooks == 0 && bNumRooks == 0) { // Nincs Bastya
-					if (wNumBishops == 0 && bNumBishops == 0) { // Nincs Futo
-						if (wNumKnights < 3 && bNumKnights < 3) { // K(Ns) vs K(Ns)
-							return 0;
-						}
-					} else if (wNumKnights == 0 && bNumKnights == 0) { // K(Bs) vs K(Bs)
-						if (Math.abs(wNumBishops - bNumBishops) < 2) { // Max B diff < 2
-							return 0;
-						}
-					} else if ((wNumKnights  < 3 && wNumBishops == 0)
-						    || (wNumKnights == 0 && wNumBishops == 1)) { // K(Ns|B) vs K(Ns|B)
-						if ((bNumKnights  < 3 && bNumBishops == 0)
-						 || (bNumKnights == 0 && bNumBishops == 1)) {
-							return 0;
-						 }
-					}
-				} else if (wNumRooks == 1 && bNumRooks == 1) { // KR(N|B) vs KR(N|B)
-					if (wNumKnights + wNumBishops == 0
-					 && bNumKnights + bNumBishops == 0) { // KR vs KR
-						return 0;
-					}
-					if (wNumKnights + wNumBishops < 2
-					 && bNumKnights + bNumBishops < 2) { // +(N|B) vs +(N|B)
-						Draw = 10;
-					}
-				} else if (wNumRooks == 1 && bNumRooks == 0) { // KR vs KNs|Bs
-					if (wNumKnights + wNumBishops == 0
-					&& (bNumKnights + bNumBishops == 1
-					 || bNumKnights + bNumBishops == 2)) {
-						Draw = 4;
-					}
-				} else if (wNumRooks == 0 && bNumRooks == 1) { // KNs|Bs vs KR
-					if (bNumKnights + bNumBishops == 0
-					&& (wNumKnights + wNumBishops == 1
-					 || wNumKnights + wNumBishops == 2)) {
-						Draw = 4;
-					}
-				}
-			}
-		}
-
-	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-		var king = 0;
-		var pawns = 0;
-		var rooks = 0;
-		var safety = 0;
-		var queens = 0;
-		var knights = 0;
-		var bishops = 0;
-		var threats = 0;
-		var posScore = 0;
-		var mobScore = 0;
-
-	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
+		var attacks;
 		var xPiecesBB = GetAllPce();
-		var wPassedPawn = new Array();
-		var bPassedPawn = new Array();
+		var score = brd_Material[WHITE] - brd_Material[BLACK];
 		var wAttacks = { Low : 0, High : 0 }; wPawnAttacks(wAttacks);
 		var bAttacks = { Low : 0, High : 0 }; bPawnAttacks(bAttacks);
 
-		var hash = brd_PawnTable[brd_pawnKeyLow & PAWNMASK];
+	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		if (hash != null && hash.pawnLockKey == brd_pawnKeyHigh) {
-
-			pawns       = hash.score;
-			wPassedPawn = hash.wPassed;
-			bPassedPawn = hash.bPassed;
-
-		} else {
-
-			pawns = EvalPawns(wPassedPawn, bPassedPawn); // Pont atvetele!
-
-			brd_PawnTable[brd_pawnKeyLow & PAWNMASK] = { // max 144 byte
-				score       : pawns,       //    8 byte
-				wPassed     : wPassedPawn, // n* 8 byte
-				bPassed     : bPassedPawn, // n* 8 byte
-				pawnLockKey : brd_pawnKeyHigh // 8 byte
-			};
+		var pawnHashIndex = brd_pawnKeyLow & PAWNMASK; // Gyalog hash
+		if (PawnHashLock[pawnHashIndex] !== brd_pawnKeyHigh) {
+			PawnHashEval[pawnHashIndex] = EvalPawns(pawnHashIndex);
+			PawnHashLock[pawnHashIndex] = brd_pawnKeyHigh;
 		}
+		score += PawnHashEval[pawnHashIndex];
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-	// Vezer, Tisztek ellenorzese
-		var wBigPieces = (wNumKnights || wNumBishops || wNumRooks || wNumQueens);
-		var bBigPieces = (bNumKnights || bNumBishops || bNumRooks || bNumQueens);
-
-	// Gyalog ellenorzes
 		var wPawnHome = BitBoard[wPawnHigh] & RankBBMask[RANKS.RANK_2]; // wPawn on 2th
 		var bPawnHome = BitBoard[bPawnLow]  & RankBBMask[RANKS.RANK_7]; // bPawn on 7th
 
@@ -1532,10 +1440,6 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		                  High : ~(BitBoard[wPawnHigh] | BitBoard[wKingHigh] | bAttacks.High) };
 		var bPawnSafe = { Low  : ~(BitBoard[bPawnLow]  | BitBoard[bKingLow]  | wAttacks.Low),
 		                  High : ~(BitBoard[bPawnHigh] | BitBoard[bKingHigh] | wAttacks.High) };
-
-	// Tamadasi erok
-		var wCanAttack = wNumQueens && (wNumKnights || wNumBishops || wNumRooks || wNumQueens >= 2);
-		var bCanAttack = bNumQueens && (bNumKnights || bNumBishops || bNumRooks || bNumQueens >= 2);
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 	//						           BABUK ERTEKELESE
@@ -1548,7 +1452,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		var WKZ = PceAttacks(KING, wKing); // Kiraly tamadas
 		var wKingAttacks = { Low : WKZ.Low, High : WKZ.High };
 		KingZone(WKZ, wKingRank, wKingFile); // 3x3-as gyuru..
-		posScore += KingPst[wKing];
+		score += KingPst[wKing];
 
 	// Fekete Kiraly
 		var bKing = brd_pieceList[BLACK_KING << 4];
@@ -1557,17 +1461,17 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		var BKZ = PceAttacks(KING, bKing); // Kiraly tamadas
 		var bKingAttacks = { Low : BKZ.Low, High : BKZ.High };
 		KingZone(BKZ, bKingRank, bKingFile); // 3x3-as gyuru..
-		posScore -= KingPst[TableMirror[bKing]];
+		score -= KingPst[TableMirror[bKing]];
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 	// Gyalog fenyegetes
-		threats += PawnCapture(wAttacks, BLACK);
-		threats -= PawnCapture(bAttacks, WHITE);
+		score += PawnCapture(wAttacks, BLACK);
+		score -= PawnCapture(bAttacks, WHITE);
 
 	// Kiraly fenyegetes
-		threats += CaptureScore(wKingAttacks, wPawnSafe, KING, BLACK);
-		threats -= CaptureScore(bKingAttacks, bPawnSafe, KING, WHITE);
+		score += CaptureScore(wKingAttacks, wPawnSafe, KING, BLACK);
+		score -= CaptureScore(bKingAttacks, bPawnSafe, KING, WHITE);
 
 	// Kiraly zonak
 		var SafeWKZ = { Low : WKZ.Low & bPawnSafe.Low, High : WKZ.High & bPawnSafe.High };
@@ -1577,419 +1481,373 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 	// Feher Vezer
 		pieceIdx = WHITE_QUEEN << 4;
-		PCE = brd_pieceList[pieceIdx++];
+		PCE = brd_pieceList[pieceIdx];
 		while (PCE != EMPTY)
 		{
-			Rank = TableRanks[PCE];
-
-			if (Rank == RANKS.RANK_7 && (bPawnHome || bKingRank == RANKS.RANK_8)) { // 7. sorban
-				queens += QueenOn7th;
+			if (TableRanks[PCE] == RANKS.RANK_7 && (bPawnHome || bKingRank == RANKS.RANK_8)) {
+				score += QueenOn7th;
 			}
 
 			// BitBoard
-			bb = AttacksFrom(QUEEN, PCE, xPiecesBB);
+			attacks = AttacksFrom(QUEEN, PCE, xPiecesBB);
 
 			// Tamadasok
-			wAttacks.Low  |= bb.Low;
-			wAttacks.High |= bb.High;
+			wAttacks.Low  |= attacks.Low;
+			wAttacks.High |= attacks.High;
 
 			// Mobilitas
-			mob  = PopCount(wPawnSafe.Low  & bb.Low);
-			mob += PopCount(wPawnSafe.High & bb.High);
+			mob = PopCount64(wPawnSafe.Low & attacks.Low, wPawnSafe.High & attacks.High);
 
 			// Fenyegetes
-			threats += CaptureScore(bb, wPawnSafe, QUEEN, BLACK);
+			score += CaptureScore(attacks, wPawnSafe, QUEEN, BLACK);
 
 			// Kiraly tamadas
-			if ((bb.Low & SafeBKZ.Low) | (bb.High & SafeBKZ.High)) {
+			if (bb = (attacks.Low & SafeBKZ.Low) | (attacks.High & SafeBKZ.High)) {
 				wAttackCount++;
-				wAttackPower += PopCount(bb.Low  & SafeBKZ.Low);
-				wAttackPower += PopCount(bb.High & SafeBKZ.High);
+				wAttackPower += PopCount(bb);
 			}
 
-			Phase -= 4;
-			mobScore += QueenMob[mob];
-			posScore += QueenPst[PCE];
-
-			PCE = brd_pieceList[pieceIdx++]; // Kovetkezo Babu
+			wForce += 4;
+			score += QueenMob[mob];
+			score += QueenPst[PCE];
+			PCE = brd_pieceList[++pieceIdx];
 		}
 
 	// Fekete Vezer
 		pieceIdx = BLACK_QUEEN << 4;
-		PCE = brd_pieceList[pieceIdx++];
+		PCE = brd_pieceList[pieceIdx];
 		while (PCE != EMPTY)
 		{
-			Rank = TableRanks[PCE];
-
-			if (Rank == RANKS.RANK_2 && (wPawnHome || wKingRank == RANKS.RANK_1)) { // 7. sorban
-				queens -= QueenOn7th;
+			if (TableRanks[PCE] == RANKS.RANK_2 && (wPawnHome || wKingRank == RANKS.RANK_1)) {
+				score -= QueenOn7th;
 			}
 
 			// BitBoard
-			bb = AttacksFrom(QUEEN, PCE, xPiecesBB);
+			attacks = AttacksFrom(QUEEN, PCE, xPiecesBB);
 
 			// Tamadasok
-			bAttacks.Low  |= bb.Low;
-			bAttacks.High |= bb.High;
+			bAttacks.Low  |= attacks.Low;
+			bAttacks.High |= attacks.High;
 
 			// Mobilitas
-			mob  = PopCount(bPawnSafe.Low  & bb.Low);
-			mob += PopCount(bPawnSafe.High & bb.High);
+			mob = PopCount64(bPawnSafe.Low & attacks.Low, bPawnSafe.High & attacks.High);
 
 			// Fenyegetes
-			threats -= CaptureScore(bb, bPawnSafe, QUEEN, WHITE);
+			score -= CaptureScore(attacks, bPawnSafe, QUEEN, WHITE);
 
 			// Kiraly tamadas
-			if ((bb.Low & SafeWKZ.Low) | (bb.High & SafeWKZ.High)) {
+			if (bb = (attacks.Low & SafeWKZ.Low) | (attacks.High & SafeWKZ.High)) {
 				bAttackCount++;
-				bAttackPower += PopCount(bb.Low  & SafeWKZ.Low);
-				bAttackPower += PopCount(bb.High & SafeWKZ.High);
+				bAttackPower += PopCount(bb);
 			}
 
-			Phase -= 4;
-			mobScore -= QueenMob[mob];
-			posScore -= QueenPst[TableMirror[PCE]];
-
-			PCE = brd_pieceList[pieceIdx++]; // Kovetkezo Babu
+			bForce += 4;
+			score -= QueenMob[mob];
+			score -= QueenPst[TableMirror[PCE]];
+			PCE = brd_pieceList[++pieceIdx];
 		}
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 	// Feher Bastya
 		pieceIdx = WHITE_ROOK << 4;
-		PCE = brd_pieceList[pieceIdx++];
+		PCE = brd_pieceList[pieceIdx];
 		while (PCE != EMPTY)
 		{
-			Rank = TableRanks[PCE];
-			File = TableFiles[PCE];
+			rank = TableRanks[PCE];
+			file = TableFiles[PCE];
 
-			if (Rank == RANKS.RANK_7 && (bPawnHome || bKingRank == RANKS.RANK_8)) { // 7. sorban
-				rooks += RookOn7th;
+			if (rank == RANKS.RANK_7 && (bPawnHome || bKingRank == RANKS.RANK_8)) {
+				score += RookOn7th;
 			}
 
 			// BitBoard
-			bb = AttacksFrom(ROOK, PCE, xPiecesBB);
+			attacks = AttacksFrom(ROOK, PCE, xPiecesBB);
 
 			// Tamadasok
-			wAttacks.Low  |= bb.Low;
-			wAttacks.High |= bb.High;
+			wAttacks.Low  |= attacks.Low;
+			wAttacks.High |= attacks.High;
 
 			// Mobilitas
-			mob  = PopCount(wPawnSafe.Low  & bb.Low);
-			mob += PopCount(wPawnSafe.High & bb.High);
+			mob = PopCount64(wPawnSafe.Low & attacks.Low, wPawnSafe.High & attacks.High);
 
 			// Fenyegetes
-			threats += CaptureScore(bb, wPawnSafe, ROOK, BLACK);
+			score += CaptureScore(attacks, wPawnSafe, ROOK, BLACK);
 
 			// Kiraly tamadas
-			if ((bb.Low & SafeBKZ.Low) | (bb.High & SafeBKZ.High)) {
+			if (bb = (attacks.Low & SafeBKZ.Low) | (attacks.High & SafeBKZ.High)) {
 				wAttackCount++;
-				wAttackPower += PopCount(bb.Low  & SafeBKZ.Low);
-				wAttackPower += PopCount(bb.High & SafeBKZ.High);
+				wAttackPower += PopCount(bb);
 			}
 
-			Phase -= 2;
-			mobScore += RookMob[mob];
-			posScore += RookPst[PCE];
+			wForce += 2;
+			score += RookMob[mob];
+			score += RookPst[PCE];
 
-			if (IsOpenFile(File, WHITE) == 0) { // Felig nyitott oszlop
-
-				if (IsOpenFile(File, BLACK) == 0) { // Teljesen nyitott
-					rooks += RookFullOpen;
+			if (IsWhiteOpenFile(file) == 0) { // Felig nyitott oszlop
+				if (IsBlackOpenFile(file) == 0) { // Teljesen nyitott
+					score += RookFullOpen;
 				} else {
-					rooks += RookHalfOpen;
+					score += RookHalfOpen;
 				}
-
-			} else if (mob <= 3 && Rank <= RANKS.RANK_2) { // Sarokba szorult..?
-
+			} else if (mob <= 3 && rank <= RANKS.RANK_2) { // Sarokba szorult..?
 				if (wKingFile < FILES.FILE_E ?
-				   (CastleRights & CASTLEBIT.WQ) == 0 && File <= wKingFile
-				 : (CastleRights & CASTLEBIT.WK) == 0 && File >= wKingFile) {
-					rooks -= BlockedRook;
+				   (CastleRights & CASTLEBIT.WQ) == 0 && file <= wKingFile
+				 : (CastleRights & CASTLEBIT.WK) == 0 && file >= wKingFile) {
+					score -= BlockedRook;
 				}
 			}
-
-			PCE = brd_pieceList[pieceIdx++]; // Kovetkezo Babu
+			PCE = brd_pieceList[++pieceIdx];
 		}
 
 	// Fekete Bastya
 		pieceIdx = BLACK_ROOK << 4;
-		PCE = brd_pieceList[pieceIdx++];
+		PCE = brd_pieceList[pieceIdx];
 		while (PCE != EMPTY)
 		{
-			Rank = TableRanks[PCE];
-			File = TableFiles[PCE];
+			rank = TableRanks[PCE];
+			file = TableFiles[PCE];
 
-			if (Rank == RANKS.RANK_2 && (wPawnHome || wKingRank == RANKS.RANK_1)) { // 7. sorban
-				rooks -= RookOn7th;
+			if (rank == RANKS.RANK_2 && (wPawnHome || wKingRank == RANKS.RANK_1)) {
+				score -= RookOn7th;
 			}
 
 			// BitBoard
-			bb = AttacksFrom(ROOK, PCE, xPiecesBB);
+			attacks = AttacksFrom(ROOK, PCE, xPiecesBB);
 
 			// Tamadasok
-			bAttacks.Low  |= bb.Low;
-			bAttacks.High |= bb.High;
+			bAttacks.Low  |= attacks.Low;
+			bAttacks.High |= attacks.High;
 
 			// Mobilitas
-			mob  = PopCount(bPawnSafe.Low  & bb.Low);
-			mob += PopCount(bPawnSafe.High & bb.High);
+			mob = PopCount64(bPawnSafe.Low & attacks.Low, bPawnSafe.High & attacks.High);
 
 			// Fenyegetes
-			threats -= CaptureScore(bb, bPawnSafe, ROOK, WHITE);
+			score -= CaptureScore(attacks, bPawnSafe, ROOK, WHITE);
 
 			// Kiraly tamadas
-			if ((bb.Low & SafeWKZ.Low) | (bb.High & SafeWKZ.High)) {
+			if (bb = (attacks.Low & SafeWKZ.Low) | (attacks.High & SafeWKZ.High)) {
 				bAttackCount++;
-				bAttackPower += PopCount(bb.Low  & SafeWKZ.Low);
-				bAttackPower += PopCount(bb.High & SafeWKZ.High);
+				bAttackPower += PopCount(bb);
 			}
 
-			Phase -= 2;
-			mobScore -= RookMob[mob];
-			posScore -= RookPst[TableMirror[PCE]];
+			bForce += 2;
+			score -= RookMob[mob];
+			score -= RookPst[TableMirror[PCE]];
 
-			if (IsOpenFile(File, BLACK) == 0) { // Felig nyitott oszlop
-
-				if (IsOpenFile(File, WHITE) == 0) { // Teljesen nyitott
-					rooks -= RookFullOpen;
+			if (IsBlackOpenFile(file) == 0) { // Felig nyitott oszlop
+				if (IsWhiteOpenFile(file) == 0) { // Teljesen nyitott
+					score -= RookFullOpen;
 				} else {
-					rooks -= RookHalfOpen;
+					score -= RookHalfOpen;
 				}
-
-			} else if (mob <= 3 && Rank >= RANKS.RANK_7) { // Sarokba szorult..?
-
+			} else if (mob <= 3 && rank >= RANKS.RANK_7) { // Sarokba szorult..?
 				if (bKingFile < FILES.FILE_E ?
-				   (CastleRights & CASTLEBIT.BQ) == 0 && File <= bKingFile
-				 : (CastleRights & CASTLEBIT.BK) == 0 && File >= bKingFile) {
-					rooks += BlockedRook;
+				   (CastleRights & CASTLEBIT.BQ) == 0 && file <= bKingFile
+				 : (CastleRights & CASTLEBIT.BK) == 0 && file >= bKingFile) {
+					score += BlockedRook;
 				}
 			}
-
-			PCE = brd_pieceList[pieceIdx++]; // Kovetkezo Babu
+			PCE = brd_pieceList[++pieceIdx];
 		}
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 	// Feher Futo
 		pieceIdx = WHITE_BISHOP << 4;
-		PCE = brd_pieceList[pieceIdx++];
+		PCE = brd_pieceList[pieceIdx];
 		while (PCE != EMPTY)
 		{
 			// BitBoard
-			bb = AttacksFrom(BISHOP, PCE, xPiecesBB);
+			attacks = AttacksFrom(BISHOP, PCE, xPiecesBB);
 
 			// Tamadasok
-			wAttacks.Low  |= bb.Low;
-			wAttacks.High |= bb.High;
+			wAttacks.Low  |= attacks.Low;
+			wAttacks.High |= attacks.High;
 
 			// Mobilitas
-			mob  = PopCount(wPawnSafe.Low  & bb.Low);
-			mob += PopCount(wPawnSafe.High & bb.High);
+			mob = PopCount64(wPawnSafe.Low & attacks.Low, wPawnSafe.High & attacks.High);
 
 			// Fenyegetes
-			threats += CaptureScore(bb, wPawnSafe, BISHOP, BLACK);
+			score += CaptureScore(attacks, wPawnSafe, BISHOP, BLACK);
 
 			// Kiraly tamadas
-			if ((bb.Low & SafeBKZ.Low) | (bb.High & SafeBKZ.High)) {
+			if (bb = (attacks.Low & SafeBKZ.Low) | (attacks.High & SafeBKZ.High)) {
 				wAttackCount++;
-				wAttackPower += PopCount(bb.Low  & SafeBKZ.Low);
-				wAttackPower += PopCount(bb.High & SafeBKZ.High);
+				wAttackPower += PopCount(bb);
 			}
 
-			Phase -= 1;
-			mobScore += BishopMob[mob];
-			posScore += BishopPst[PCE];
-
-			PCE = brd_pieceList[pieceIdx++]; // Kovetkezo Babu
+			wForce += 1;
+			score += BishopMob[mob];
+			score += BishopPst[PCE];
+			PCE = brd_pieceList[++pieceIdx];
 		}
 
 	// Fekete Futo
 		pieceIdx = BLACK_BISHOP << 4;
-		PCE = brd_pieceList[pieceIdx++];
+		PCE = brd_pieceList[pieceIdx];
 		while (PCE != EMPTY)
 		{
 			// BitBoard
-			bb = AttacksFrom(BISHOP, PCE, xPiecesBB);
+			attacks = AttacksFrom(BISHOP, PCE, xPiecesBB);
 
 			// Tamadasok
-			bAttacks.Low  |= bb.Low;
-			bAttacks.High |= bb.High;
+			bAttacks.Low  |= attacks.Low;
+			bAttacks.High |= attacks.High;
 
 			// Mobilitas
-			mob  = PopCount(bPawnSafe.Low  & bb.Low);
-			mob += PopCount(bPawnSafe.High & bb.High);
+			mob = PopCount64(bPawnSafe.Low & attacks.Low, bPawnSafe.High & attacks.High);
 
 			// Fenyegetes
-			threats -= CaptureScore(bb, bPawnSafe, BISHOP, WHITE);
+			score -= CaptureScore(attacks, bPawnSafe, BISHOP, WHITE);
 
 			// Kiraly tamadas
-			if ((bb.Low & SafeWKZ.Low) | (bb.High & SafeWKZ.High)) {
+			if (bb = (attacks.Low & SafeWKZ.Low) | (attacks.High & SafeWKZ.High)) {
 				bAttackCount++;
-				bAttackPower += PopCount(bb.Low  & SafeWKZ.Low);
-				bAttackPower += PopCount(bb.High & SafeWKZ.High);
+				bAttackPower += PopCount(bb);
 			}
 
-			Phase -= 1;
-			mobScore -= BishopMob[mob];
-			posScore -= BishopPst[TableMirror[PCE]];
-
-			PCE = brd_pieceList[pieceIdx++]; // Kovetkezo Babu
+			bForce += 1;
+			score -= BishopMob[mob];
+			score -= BishopPst[TableMirror[PCE]];
+			PCE = brd_pieceList[++pieceIdx];
 		}
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 	// Feher Huszar
 		pieceIdx = WHITE_KNIGHT << 4;
-		PCE = brd_pieceList[pieceIdx++];
+		PCE = brd_pieceList[pieceIdx];
 		while (PCE != EMPTY)
 		{
 			// BitBoard
-			bb = PceAttacks(KNIGHT, PCE);
+			attacks = PceAttacks(KNIGHT, PCE);
 
 			// Tamadasok
-			wAttacks.Low  |= bb.Low;
-			wAttacks.High |= bb.High;
+			wAttacks.Low  |= attacks.Low;
+			wAttacks.High |= attacks.High;
 
 			// Mobilitas
-			mob  = PopCount(wPawnSafe.Low  & bb.Low);
-			mob += PopCount(wPawnSafe.High & bb.High);
+			mob = PopCount64(wPawnSafe.Low & attacks.Low, wPawnSafe.High & attacks.High);
 
 			// Fenyegetes
-			threats += CaptureScore(bb, wPawnSafe, KNIGHT, BLACK);
+			score += CaptureScore(attacks, wPawnSafe, KNIGHT, BLACK);
 
 			// Kiraly tamadas
-			if ((bb.Low & SafeBKZ.Low) | (bb.High & SafeBKZ.High)) {
+			if (bb = (attacks.Low & SafeBKZ.Low) | (attacks.High & SafeBKZ.High)) {
 				wAttackCount++;
-				wAttackPower += PopCount(bb.Low  & SafeBKZ.Low);
-				wAttackPower += PopCount(bb.High & SafeBKZ.High);
+				wAttackPower += PopCount(bb);
 			}
 
-			Phase -= 1;
-			mobScore += KnightMob[mob];
-			posScore += KnightPst[PCE];
+			wForce += 1;
+			score += KnightMob[mob];
+			score += KnightPst[PCE];
 
 			var outpost = KnightOutpost[PCE]; // Huszar Orszem
-
 			if (outpost && DefendedByBPawn(PCE) == 0) { // Nincs fenyegetes
-				knights += outpost * PopCount(DefendedByWPawn(PCE));
+				score += outpost * PopCount(DefendedByWPawn(PCE));
 			}
-
-			PCE = brd_pieceList[pieceIdx++]; // Kovetkezo Babu
+			PCE = brd_pieceList[++pieceIdx];
 		}
 
 	// Fekete Huszar
 		pieceIdx = BLACK_KNIGHT << 4;
-		PCE = brd_pieceList[pieceIdx++];
+		PCE = brd_pieceList[pieceIdx];
 		while (PCE != EMPTY)
 		{
 			// BitBoard
-			bb = PceAttacks(KNIGHT, PCE);
+			attacks = PceAttacks(KNIGHT, PCE);
 
 			// Tamadasok
-			bAttacks.Low  |= bb.Low;
-			bAttacks.High |= bb.High;
+			bAttacks.Low  |= attacks.Low;
+			bAttacks.High |= attacks.High;
 
 			// Mobilitas
-			mob  = PopCount(bPawnSafe.Low  & bb.Low);
-			mob += PopCount(bPawnSafe.High & bb.High);
+			mob = PopCount64(bPawnSafe.Low & attacks.Low, bPawnSafe.High & attacks.High);
 
 			// Fenyegetes
-			threats -= CaptureScore(bb, bPawnSafe, KNIGHT, WHITE);
+			score -= CaptureScore(attacks, bPawnSafe, KNIGHT, WHITE);
 
 			// Kiraly tamadas
-			if ((bb.Low & SafeWKZ.Low) | (bb.High & SafeWKZ.High)) {
+			if (bb = (attacks.Low & SafeWKZ.Low) | (attacks.High & SafeWKZ.High)) {
 				bAttackCount++;
-				bAttackPower += PopCount(bb.Low  & SafeWKZ.Low);
-				bAttackPower += PopCount(bb.High & SafeWKZ.High);
+				bAttackPower += PopCount(bb);
 			}
 
-			Phase -= 1;
-			mobScore -= KnightMob[mob];
-			posScore -= KnightPst[TableMirror[PCE]];
+			bForce += 1;
+			score -= KnightMob[mob];
+			score -= KnightPst[TableMirror[PCE]];
 
 			var outpost = KnightOutpost[TableMirror[PCE]]; // Huszar Orszem
-
 			if (outpost && DefendedByWPawn(PCE) == 0) { // Nincs fenyegetes
-				knights -= outpost * PopCount(DefendedByBPawn(PCE));
+				score -= outpost * PopCount(DefendedByBPawn(PCE));
 			}
-
-			PCE = brd_pieceList[pieceIdx++]; // Kovetkezo Babu
+			PCE = brd_pieceList[++pieceIdx];
 		}
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-	// Feher Telt Gyalog
-		for (var idx = 0; idx < wPassedPawn.length; idx++)
+	// Feher Fejlett Telt Gyalog
+		for (var idx = pawnHashIndex * 9; PawnHashPassW[idx] != EMPTY; idx++)
 		{
-			PCE = wPassedPawn[idx];
-			Rank = TableRanks[PCE];
-			File = TableFiles[PCE];
+			PCE = PawnHashPassW[idx];
+			rank = TableRanks[PCE];
+			file = TableFiles[PCE];
 
-			pawns += PassedPawnBase[Rank]; // Alap Pont
+			score += PassedDistanceOwn [(DISTANCE[(wKing << 6) | (PCE-8)] << 3) | (rank)]; // Sajat Kiraly
+			score += PassedDistanceThem[(DISTANCE[(bKing << 6) | (PCE-8)] << 3) | (rank)]; // Ellenfel Kiraly
 
-			if (Rank >= RANKS.RANK_4) {
+			if (bForce == 0 && UnstoppablePawn(wKing, bKing, xPiecesBB, PCE, WHITE, file-1)) { // Megallithatatlan
 
-				pawns += PassedDistanceOwn [DISTANCE[wKing][PCE-8]][Rank]; // Kiraly Tavolsag Sajat
-				pawns += PassedDistanceThem[DISTANCE[bKing][PCE-8]][Rank]; // Kiraly Tavolsag Ellenfel
+				score += 900 * (rank - RANKS.RANK_3) / 5;
 
-				if (!bBigPieces && UnstoppablePawn(wKing, bKing, xPiecesBB, PCE, WHITE, File-1)) { // Megallithatatlan
+			} else if (CHESS_BOARD[PCE-8] == 0) { // Szabad Telt Gyalog
 
-					pawns += 900 * (Rank - RANKS.RANK_3) / 5;
+				var unsafe = (bKingAttacks.Low & ~(wKingAttacks.Low | wAttacks.Low)) | bAttacks.Low;
+				var front  = { High : WOpenFileMask[BitFixHigh[PCE]], Low : WOpenFileMask[PCE] };
+				var rear   = { Low  : BOpenFileMask[BitFixLow[PCE]], High : BOpenFileMask[PCE] };
 
-				} else if (CHESS_BOARD[PCE-8] == 0) { // Szabad Telt Gyalog
-
-					var unsafe = (bKingAttacks.Low & ~(wKingAttacks.Low | wAttacks.Low)) | bAttacks.Low;
-					var front  = { High : WOpenFileMask[BitFixHigh[PCE]], Low : WOpenFileMask[PCE] };
-					var rear   = { Low  : BOpenFileMask[BitFixLow[PCE]], High : BOpenFileMask[PCE] };
-
-					if (FreePawn(unsafe, front.Low, rear, xPiecesBB, PCE, BLACK, LOW)) { // Szabad
-						pawns += PassedFullFree[Rank];
-					}
-						pawns += PassedHalfFree[Rank];
+				if (FreePawn(unsafe, front.Low, rear, xPiecesBB, PCE, BLACK, LOW)) { // Szabad
+					score += PassedFullFree[rank];
 				}
+					score += PassedHalfFree[rank];
 			}
 		}
 
-	// Fekete Telt Gyalog
-		for (var idx = 0; idx < bPassedPawn.length; idx++)
+	// Fekete Fejlett Telt Gyalog
+		for (var idx = pawnHashIndex * 9; PawnHashPassB[idx] != EMPTY; idx++)
 		{
-			PCE = bPassedPawn[idx];
-			Rank = TableRanks[PCE];
-			File = TableFiles[PCE];
+			PCE = PawnHashPassB[idx];
+			rank = TableRanks[PCE];
+			file = TableFiles[PCE];
 
-			pawns -= PassedPawnBase[9-Rank]; // Alap Pont
+			score -= PassedDistanceOwn [(DISTANCE[(bKing << 6) | (PCE+8)] << 3) | (9-rank)]; // Sajat Kiraly
+			score -= PassedDistanceThem[(DISTANCE[(wKing << 6) | (PCE+8)] << 3) | (9-rank)]; // Ellenfel Kiraly
 
-			if (Rank <= RANKS.RANK_5) {
+			if (wForce == 0 && UnstoppablePawn(bKing, wKing, xPiecesBB, PCE, BLACK, file+55)) { // Megallithatatlan
 
-				pawns -= PassedDistanceOwn [DISTANCE[bKing][PCE+8]][9-Rank]; // Kiraly Tavolsag Sajat
-				pawns -= PassedDistanceThem[DISTANCE[wKing][PCE+8]][9-Rank]; // Kiraly Tavolsag Ellenfel
+				score -= 900 * (RANKS.RANK_6 - rank) / 5;
 
-				if (!wBigPieces && UnstoppablePawn(bKing, wKing, xPiecesBB, PCE, BLACK, File+55)) { // Megallithatatlan
+			} else if (CHESS_BOARD[PCE+8] == 0) { // Szabad Telt Gyalog
 
-					pawns -= 900 * (RANKS.RANK_6 - Rank) / 5;
+				var unsafe = (wKingAttacks.High & ~(bKingAttacks.High | bAttacks.High)) | wAttacks.High;
+				var front  = { Low  : BOpenFileMask[BitFixLow[PCE]], High : BOpenFileMask[PCE] };
+				var rear   = { High : WOpenFileMask[BitFixHigh[PCE]], Low : WOpenFileMask[PCE] };
 
-				} else if (CHESS_BOARD[PCE+8] == 0) { // Szabad Telt Gyalog
-
-					var unsafe = (wKingAttacks.High & ~(bKingAttacks.High | bAttacks.High)) | wAttacks.High;
-					var front  = { Low  : BOpenFileMask[BitFixLow[PCE]], High : BOpenFileMask[PCE] };
-					var rear   = { High : WOpenFileMask[BitFixHigh[PCE]], Low : WOpenFileMask[PCE] };
-
-					if (FreePawn(unsafe, front.High, rear, xPiecesBB, PCE, WHITE, HIGH)) { // Szabad
-						pawns -= PassedFullFree[9-Rank];
-					}
-						pawns -= PassedHalfFree[9-Rank];
+				if (FreePawn(unsafe, front.High, rear, xPiecesBB, PCE, WHITE, HIGH)) { // Szabad
+					score -= PassedFullFree[9-rank];
 				}
+					score -= PassedHalfFree[9-rank];
 			}
 		}
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		if (wCanAttack)
+		if (wForce >= 5 && brd_pieceCount[WHITE_QUEEN])
 		{
 			if (wAttackCount > 4) wAttackCount = 4; // Max 4 tamado
 
-			safety += KingSafetyMull[wAttackCount] * wAttackPower;
+			score += KingSafetyMull[wAttackCount] * wAttackPower;
 
 			if (bKingRank >= RANKS.RANK_6) { // Pawn shield
 
@@ -1997,16 +1855,16 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 				for (bb = BitBoard[bPawnLow] & shield_zone; bb != 0; bb = restBit(bb)) {
 
-					PCE = firstBitLow(bb);
+					PCE = firstBit(bb & -bb);
 
 					if ((WOpenFileMask[PCE] & BitBoard[bPawnLow] & shield_zone) == 0) {
 
-						Rank = TableRanks[PCE];
-						File = TableFiles[PCE];
+						rank = TableRanks[PCE];
+						file = TableFiles[PCE];
 
-						if (File > FILES.FILE_D) File = 9 - File;
+						if (file > FILES.FILE_D) file = 9 - file;
 
-						king -= KingShield[File][9-Rank];
+						score -= KingShield[file * 5 + (9-rank)];
 					}
 				}
 			}
@@ -2014,11 +1872,11 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		if (bCanAttack)
+		if (bForce >= 5 && brd_pieceCount[BLACK_QUEEN])
 		{
 			if (bAttackCount > 4) bAttackCount = 4; // Max 4 tamado
 
-			safety -= KingSafetyMull[bAttackCount] * bAttackPower;
+			score -= KingSafetyMull[bAttackCount] * bAttackPower;
 
 			if (wKingRank <= RANKS.RANK_3) { // Pawn shield
 
@@ -2026,16 +1884,16 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 				for (bb = BitBoard[wPawnHigh] & shield_zone; bb != 0; bb = restBit(bb)) {
 
-					PCE = firstBitHigh(bb);
+					PCE = firstBit(bb & -bb) + 32;
 
 					if ((BOpenFileMask[PCE] & BitBoard[wPawnHigh] & shield_zone) == 0) {
 
-						Rank = TableRanks[PCE];
-						File = TableFiles[PCE];
+						rank = TableRanks[PCE];
+						file = TableFiles[PCE];
 
-						if (File > FILES.FILE_D) File = 9 - File;
+						if (file > FILES.FILE_D) file = 9 - file;
 
-						king += KingShield[File][Rank];
+						score += KingShield[file * 5 + (rank)];
 					}
 				}
 			}
@@ -2043,68 +1901,59 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		if (wNumBishops >= 2) bishops += BishopPair;
-		if (bNumBishops >= 2) bishops -= BishopPair;
+		if (brd_pieceCount[WHITE_BISHOP] >= 2) score += BishopPair;
+		if (brd_pieceCount[BLACK_BISHOP] >= 2) score -= BishopPair;
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		var tempo = CurrentPlayer === WHITE ? TempoBonus : -TempoBonus;
+		score += CurrentPlayer === WHITE ? TempoBonus : -TempoBonus;
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		var material = brd_Material[WHITE] - brd_Material[BLACK] + posScore;
-
-		var nn_eval = ChessNNEval();
-
-		var score = material;
-
-		score += mobScore;
-		score += threats;
-		score += safety;
-		score += tempo;
-		score += pawns;
-		score += knights;
-		score += bishops;
-		score += rooks;
-		score += queens;
-		score += king;
-
-		if (Phase < 0) { // Minden babu a fedelzeten = 0
-			Phase = 0;
-		}
-
-		Phase = (Phase << 8) / 24 + 0.5 | 0; // Jatek fazis
+		var phase = 24 - wForce - bForce;
 
 		// Linearis interpolacio kezdo es vegjatek kozott..
 
-		score = ((MG_SC(score) * (256 - Phase)) + (EG_SC(score) * Phase)) >> 8;
+		score = Interpolation(MG_SC(score), EG_SC(score), phase);
 
-		score = (score + nn_eval) / Draw | 0; // Ketes dontetlennel nem 0-at adunk vissza!
+		var drawMul = score >= 0 // Dontetlenek..
+		? GetDrawMul(WHITE, BLACK, wForce, bForce)
+		: GetDrawMul(BLACK, WHITE, bForce, wForce);
 
-	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+		var nnEval = drawMul >= 0.5 ? ChessNNEval() : 0;
 
-		if (ShowEvalForUI === true) {
-			return '\n'
-			+' Eval term |       MG       |       EG       |\n'
-			+'-----------|----------------|----------------|\n'
-			+' tempo     |'+evalStr(tempo)               +'|\n'
-			+' pawns     |'+evalStr(pawns)               +'|\n'
-			+' knights   |'+evalStr(knights)             +'|\n'
-			+' bishops   |'+evalStr(bishops)             +'|\n'
-			+' rooks     |'+evalStr(rooks)               +'|\n'
-			+' queens    |'+evalStr(queens)              +'|\n'
-			+' king      |'+evalStr(king)                +'|\n'
-			+' safety    |'+evalStr(safety)              +'|\n'
-			+' threats   |'+evalStr(threats)             +'|\n'
-			+' mobility  |'+evalStr(mobScore)            +'|\n'
-			+' material  |'+evalStr(material)            +'|\n'
-			+'-----------|----------------|----------------|\n'
-			+' Total Eval: '+(score / 100).toFixed(2);
-		}
-
-	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+		score = (score + nnEval) * drawMul | 0; // Ketes dontetlen..?
 
 		return CurrentPlayer === WHITE ? score : -score;
+	}
+
+// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+	function GetDrawMul(winSide, defSide, winForce, defForce) {
+		if (winForce <= 3) { // few pieces..
+			var winPawns = brd_pieceCount[winSide|PAWN];
+			var defPawns = brd_pieceCount[defSide|PAWN];
+			if (winPawns == 0) {
+				if (winForce == 0) return 0; // Lone king
+				if (winForce == 1) return 0.1; // King with minor
+				if (winForce <= defForce + 1) return 0.2; // Equal or one minor diff
+				if (winForce == 2 && brd_pieceCount[winSide|KNIGHT] == 2) return 0.2;
+			}
+			// opponent sacrifice to take last pawn..
+			if (winPawns == 1 && defForce >= 1) {
+				if (winForce <= 1) return 0.5;
+				if (winForce == 2 && brd_pieceCount[winSide|KNIGHT] == 2) return 0.5;
+			}
+			// opposite-coloured bishops
+			if (winForce == 1 && defForce == 1 && Math.abs(winPawns - defPawns) <= 1) {
+				var winB = brd_pieceList[(winSide|BISHOP) << 4];
+				var defB = brd_pieceList[(defSide|BISHOP) << 4];
+				if (winB != EMPTY && defB != EMPTY && SquareColour(winB) != SquareColour(defB)) {
+					return 0.5;
+				}
+			}
+		}
+		return 1;
 	}
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -2116,9 +1965,9 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		if ((xPiecesBB.Low & front.Low) | (xPiecesBB.High & front.High)) return false; // blocked!
 
-		if (DISTANCE[usKing][sq] <= 1 && DISTANCE[usKing][promSq] <= 1) return true; // king controls promotion path
+		if (DISTANCE[(usKing << 6) | sq] <= 1 && DISTANCE[(usKing << 6) | promSq] <= 1) return true; // king controls promotion path
 
-		if (DISTANCE[sq][promSq] < DISTANCE[themKing][promSq] + ((CurrentPlayer == us)|0) - 1) return true; // unstoppable
+		if (DISTANCE[(sq << 6) | promSq] < DISTANCE[(themKing << 6) | promSq] + ((CurrentPlayer == us)|0) - 1) return true; // unstoppable
 
 		return false;
 	}
@@ -2133,8 +1982,8 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		rear.Low  &= BitBoard[(them|ROOK) << 1 | LOW]  | BitBoard[(them|QUEEN) << 1 | LOW];
 		rear.High &= BitBoard[(them|ROOK) << 1 | HIGH] | BitBoard[(them|QUEEN) << 1 | HIGH];
 
-		for (var bb = rear.Low;  bb != 0; bb = restBit(bb)) if (LineIsEmpty(firstBitLow(bb),  sq, xPiecesBB) == 0) return false;
-		for (var bb = rear.High; bb != 0; bb = restBit(bb)) if (LineIsEmpty(firstBitHigh(bb), sq, xPiecesBB) == 0) return false;
+		for (var bb = rear.Low;  bb != 0; bb = restBit(bb)) if (LineBlocker(firstBit(bb & -bb)     , sq, xPiecesBB) == 0) return false;
+		for (var bb = rear.High; bb != 0; bb = restBit(bb)) if (LineBlocker(firstBit(bb & -bb) + 32, sq, xPiecesBB) == 0) return false;
 
 		return true;
 	}
@@ -2151,7 +2000,6 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		if (pce >= ROOK) {
 			weak.Low  &= pawnSafe.Low  & ~BitBoard[(them|pce) << 1 | LOW]; // Not equal and not defended by pawn..
 			weak.High &= pawnSafe.High & ~BitBoard[(them|pce) << 1 | HIGH];
-
 			if (pce == ROOK) {
 				weak.Low  |= attacks.Low  & BitBoard[(them|QUEEN) << 1 | LOW]; // ..or Queen attacked by Rook!
 				weak.High |= attacks.High & BitBoard[(them|QUEEN) << 1 | HIGH];
@@ -2159,9 +2007,8 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		}
 
 		var sc = 0;
-		for (var bb = weak.Low;  bb != 0; bb = restBit(bb)) sc += ThreatScore[pce][CHESS_BOARD[firstBitLow(bb)]  & 0x07];
-		for (var bb = weak.High; bb != 0; bb = restBit(bb)) sc += ThreatScore[pce][CHESS_BOARD[firstBitHigh(bb)] & 0x07];
-
+		for (var bb = weak.Low;  bb != 0; bb = restBit(bb)) sc += ThreatScore[pce * 7 + (CHESS_BOARD[firstBit(bb & -bb)     ] & 0x07)];
+		for (var bb = weak.High; bb != 0; bb = restBit(bb)) sc += ThreatScore[pce * 7 + (CHESS_BOARD[firstBit(bb & -bb) + 32] & 0x07)];
 		return sc;
 	}
 
@@ -2173,99 +2020,99 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		             High : attacks.High & BitBoard[them << 1 | HIGH] & ~BitBoard[(them|PAWN) << 1 | HIGH] };
 
 		var sc = 0;
-		for (var bb = weak.Low;  bb != 0; bb = restBit(bb)) sc += ThreatScore[PAWN][CHESS_BOARD[firstBitLow(bb)]  & 0x07];
-		for (var bb = weak.High; bb != 0; bb = restBit(bb)) sc += ThreatScore[PAWN][CHESS_BOARD[firstBitHigh(bb)] & 0x07];
-
+		for (var bb = weak.Low;  bb != 0; bb = restBit(bb)) sc += ThreatScore[PAWN * 7 + (CHESS_BOARD[firstBit(bb & -bb)     ] & 0x07)];
+		for (var bb = weak.High; bb != 0; bb = restBit(bb)) sc += ThreatScore[PAWN * 7 + (CHESS_BOARD[firstBit(bb & -bb) + 32] & 0x07)];
 		return sc;
 	}
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-	function EvalPawns(wPassedPawn, bPassedPawn) {
-
-		var PCE   = 0;
+	function EvalPawns(pawnHashIndex) {
 		var score = 0;
-
+		var passIdx = pawnHashIndex * 9;
+		PawnHashPassW[passIdx] = EMPTY;
 		var pieceIdx = WHITE_PAWN << 4;
-		PCE = brd_pieceList[pieceIdx++];
+		var PCE = brd_pieceList[pieceIdx];
 		while (PCE != EMPTY)
 		{
-			var Rank = TableRanks[PCE];
-			var File = TableFiles[PCE];
-
+			var rank = TableRanks[PCE];
+			var file = TableFiles[PCE];
 			var Open = WhiteOpenFile(PCE) == 0 && WhiteMostPawn(PCE) == 0; // Legelso + Nyitott
 
 			if (DirectNeighborPawn(PCE, WHITE) || DefendedByWPawn(PCE)) { // Eros Gyalog
 
-				score += Open ? PawnConnectedOpen[Rank] : PawnConnected[Rank];
+				score += Open ? PawnConnectedOpen[rank] : PawnConnected[rank];
 
 			} else {
 
 				if (BlackOpenFile(PCE) != 0) { // Dupla Gyalog
 
-					score += Open ? PawnDoubledOpen[Rank] : PawnDoubled[Rank];
+					score += Open ? PawnDoubledOpen[rank] : PawnDoubled[rank];
 				}
 
-				if (IsolatedPawn(PCE, WHITE) == 0) { // Elkulonitett Gyalog
+				if (IsolatedWhitePawn(PCE) == 0) { // Elkulonitett Gyalog
 
-					score += Open ? PawnIsolatedOpen[Rank] : PawnIsolated[Rank];
+					score += Open ? PawnIsolatedOpen[rank] : PawnIsolated[rank];
 
-				} else if (WeakPawn(PCE, Rank, File, WHITE, BLACK)) { // Gyenge Gyalog
+				} else if (WeakPawn(PCE, rank, file, WHITE, BLACK)) { // Gyenge Gyalog
 
-					score += Open ? PawnBackwardOpen[Rank] : PawnBackward[Rank];
+					score += Open ? PawnBackwardOpen[rank] : PawnBackward[rank];
 				}
 			}
 
 			if (Open && WhitePassedPawn(PCE) == 0) { // Telt Gyalog
-
-				wPassedPawn[wPassedPawn.length] = PCE;
+				score += PassedPawnBase[rank];
+				if (rank >= RANKS.RANK_4) { // Fejlett
+					PawnHashPassW[passIdx++] = PCE;
+					PawnHashPassW[passIdx] = EMPTY;
+				}
 			}
-
 			score += PawnPst[PCE];
-
-			PCE = brd_pieceList[pieceIdx++]; // Kovetkezo Babu
+			PCE = brd_pieceList[++pieceIdx];
 		}
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		var pieceIdx = BLACK_PAWN << 4;
-		PCE = brd_pieceList[pieceIdx++];
+		passIdx = pawnHashIndex * 9;
+		PawnHashPassB[passIdx] = EMPTY;
+		pieceIdx = BLACK_PAWN << 4;
+		PCE = brd_pieceList[pieceIdx];
 		while (PCE != EMPTY)
 		{
-			var Rank = TableRanks[PCE];
-			var File = TableFiles[PCE];
-
+			var rank = TableRanks[PCE];
+			var file = TableFiles[PCE];
 			var Open = BlackOpenFile(PCE) == 0 && BlackMostPawn(PCE) == 0; // Legelso + Nyitott
 
 			if (DirectNeighborPawn(PCE, BLACK) || DefendedByBPawn(PCE)) { // Eros Gyalog
 
-				score -= Open ? PawnConnectedOpen[9-Rank] : PawnConnected[9-Rank];
+				score -= Open ? PawnConnectedOpen[9-rank] : PawnConnected[9-rank];
 
 			} else {
 
 				if (WhiteOpenFile(PCE) != 0) { // Dupla Gyalog
 
-					score -= Open ? PawnDoubledOpen[9-Rank] : PawnDoubled[9-Rank];
+					score -= Open ? PawnDoubledOpen[9-rank] : PawnDoubled[9-rank];
 				}
 
-				if (IsolatedPawn(PCE, BLACK) == 0) { // Elkulonitett Gyalog
+				if (IsolatedBlackPawn(PCE) == 0) { // Elkulonitett Gyalog
 
-					score -= Open ? PawnIsolatedOpen[9-Rank] : PawnIsolated[9-Rank];
+					score -= Open ? PawnIsolatedOpen[9-rank] : PawnIsolated[9-rank];
 
-				} else if (WeakPawn(PCE, Rank, File, BLACK, WHITE)) { // Gyenge Gyalog
+				} else if (WeakPawn(PCE, rank, file, BLACK, WHITE)) { // Gyenge Gyalog
 
-					score -= Open ? PawnBackwardOpen[9-Rank] : PawnBackward[9-Rank];
+					score -= Open ? PawnBackwardOpen[9-rank] : PawnBackward[9-rank];
 				}
 			}
 
 			if (Open && BlackPassedPawn(PCE) == 0) { // Telt Gyalog
-
-				bPassedPawn[bPassedPawn.length] = PCE;
+				score -= PassedPawnBase[9-rank];
+				if (rank <= RANKS.RANK_5) { // Fejlett
+					PawnHashPassB[passIdx++] = PCE;
+					PawnHashPassB[passIdx] = EMPTY;
+				}
 			}
-
 			score -= PawnPst[TableMirror[PCE]];
-
-			PCE = brd_pieceList[pieceIdx++]; // Kovetkezo Babu
+			PCE = brd_pieceList[++pieceIdx];
 		}
 
 		return score;
@@ -2353,13 +2200,13 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 				for (pieceType = PAWN; pieceType <= KING; pieceType++)
 				{
 					if (bb = remaining.Low & BitBoard[(Side|pieceType) << 1 | LOW]) {
-						from = firstBitLow(bb);
+						from = firstBit(bb & -bb);
 						remaining.Low ^= SetMask[from];
 						provisory.Low ^= SetMask[from];
 						break;
 					}
 					if (bb = remaining.High & BitBoard[(Side|pieceType) << 1 | HIGH]) {
-						from = firstBitHigh(bb);
+						from = firstBit(bb & -bb) + 32;
 						remaining.High ^= SetMask[from];
 						provisory.High ^= SetMask[from];
 						break;
@@ -2374,25 +2221,21 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 				if (Beyond.Low | Beyond.High) // Felfedezett Sakk..?
 				{
-					var b = { Low : 0, High : 0 };
-
 					if (TableRanks[from] == TableRanks[King] || TableFiles[from] == TableFiles[King]) {
-						bb = PceAttacks(ROOK, King);
-						b.Low  |= bb.Low  & (BitBoard[(them|ROOK) << 1 | LOW]  | BitBoard[(them|QUEEN) << 1 | LOW]);
-						b.High |= bb.High & (BitBoard[(them|ROOK) << 1 | HIGH] | BitBoard[(them|QUEEN) << 1 | HIGH]);
+						Beyond.Low  &= BitBoard[(them|ROOK) << 1 | LOW]  | BitBoard[(them|QUEEN) << 1 | LOW];
+						Beyond.High &= BitBoard[(them|ROOK) << 1 | HIGH] | BitBoard[(them|QUEEN) << 1 | HIGH];
 					} else {
-						bb = PceAttacks(BISHOP, King);
-						b.Low  |= bb.Low  & (BitBoard[(them|BISHOP) << 1 | LOW]  | BitBoard[(them|QUEEN) << 1 | LOW]);
-						b.High |= bb.High & (BitBoard[(them|BISHOP) << 1 | HIGH] | BitBoard[(them|QUEEN) << 1 | HIGH]);
+						Beyond.Low  &= BitBoard[(them|BISHOP) << 1 | LOW]  | BitBoard[(them|QUEEN) << 1 | LOW];
+						Beyond.High &= BitBoard[(them|BISHOP) << 1 | HIGH] | BitBoard[(them|QUEEN) << 1 | HIGH];
 					}
 
-					for (bb = b.Low & Beyond.Low & provisory.Low; bb != 0 && from != EMPTY; bb = restBit(bb))
+					for (bb = Beyond.Low & provisory.Low; bb != 0 && from != EMPTY; bb = restBit(bb))
 					{
-						if (LineIsEmpty(firstBitLow(bb), King, provisory) == 0) from = EMPTY;
+						if (LineBlocker(firstBit(bb & -bb), King, provisory) == 0) from = EMPTY;
 					}
-					for (bb = b.High & Beyond.High & provisory.High; bb != 0 && from != EMPTY; bb = restBit(bb))
+					for (bb = Beyond.High & provisory.High; bb != 0 && from != EMPTY; bb = restBit(bb))
 					{
-						if (LineIsEmpty(firstBitHigh(bb), King, provisory) == 0) from = EMPTY;
+						if (LineBlocker(firstBit(bb & -bb) + 32, King, provisory) == 0) from = EMPTY;
 					}
 				}
 			}
@@ -2464,14 +2307,13 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-	function GenerateAllMoves(capturesOnly, useSee) {
+	function GenerateAllMoves(capturesOnly) {
 
 		var pieceType = 0; // Akivel lepunk
 		var pieceIdx  = 0; // Babu indexeles
 		var from      = 0; // Ahonnan lepunk
 		var next      = 0; // Ahova lepunk
 		var score     = 0; // Lepes pont
-		var Move      = 0; // Lepes bit
 		var bb        = 0; // BitBoard
 
 		brd_moveStart[BoardPly + 1] = brd_moveStart[BoardPly]; // Hack
@@ -2480,15 +2322,15 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		var xPiecesBB = GetAllPce();
 		var inc = CurrentPlayer ? 8 : -8;
-		var enemy = AllPceByColor(CurrentPlayer^8);
+		var enemy = AllPceBySide(CurrentPlayer^8);
 		var StartRank   = CurrentPlayer ? RANKS.RANK_7 : RANKS.RANK_2;
 		var PromoteRank = CurrentPlayer ? RANKS.RANK_2 : RANKS.RANK_7;
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 		// Gyalog lepesek
-		pieceIdx = (CurrentPlayer|PAWN) << 4;
-		from = brd_pieceList[pieceIdx++];
+		pieceIdx = (CurrentPlayer | PAWN) << 4;
+		from = brd_pieceList[pieceIdx];
 		while (from != EMPTY)
 		{
 			next = from + inc; // Elore lepes
@@ -2519,11 +2361,11 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 			for (bb = NeighbourMask[next]; bb != 0; bb = restBit(bb)) // Tamadasok
 			{
-				next = HighSQMask[next] ? firstBitHigh(bb) : firstBitLow(bb); // from [+-] 7/9
+				next = HighSQMask[next] ? firstBit(bb & -bb) + 32 : firstBit(bb & -bb); // from [+-] 7/9
 
 				if (CHESS_BOARD[next] && (CHESS_BOARD[next] & 0x8) !== CurrentPlayer) // Ellenfel
 				{
-					score = 1000005 + (100 * MvvLvaScores[CHESS_BOARD[next]]); // Pontszam
+					score = 1000005 + MvvLvaScores100[CHESS_BOARD[next]]; // Pontszam
 
 					if (TableRanks[from] == PromoteRank) // Gyalog bevaltas
 					{
@@ -2541,8 +2383,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 					AddCaptureMove(BIT_MOVE(from, next, 1, 0, 0), score);
 				}
 			}
-
-			from = brd_pieceList[pieceIdx++]; // Kovetkezo Babu
+			from = brd_pieceList[++pieceIdx];
 		}
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -2591,47 +2432,40 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		for (pieceType = KNIGHT; pieceType <= KING; pieceType++)
 		{
 			pieceIdx = (CurrentPlayer | pieceType) << 4;
-			from = brd_pieceList[pieceIdx++];
+			from = brd_pieceList[pieceIdx];
 			while (from != EMPTY)
 			{
 				var attacks = AttacksFrom(pieceType, from, xPiecesBB);
 
 				for (bb = attacks.Low & enemy.Low; bb != 0; bb = restBit(bb)) // Tamadas
 				{
-					next = firstBitLow(bb); Move = BIT_MOVE(from, next, 1, 0, 0);
+					next = firstBit(bb & -bb);
 
-					if (useSee && !See(Move))
-					score =     106 + ((100 * MvvLvaScores[CHESS_BOARD[next]]) - MvvLvaScores[pieceType]); // Pontszam
-					else
-					score = 1000006 + ((100 * MvvLvaScores[CHESS_BOARD[next]]) - MvvLvaScores[pieceType]); // Pontszam
+					score = 1000006 + (MvvLvaScores100[CHESS_BOARD[next]] - MvvLvaScores[pieceType]); // Pontszam
 
-					AddCaptureMove(Move, score);
+					AddCaptureMove(BIT_MOVE(from, next, 1, 0, 0), score);
 				}
 				for (bb = attacks.High & enemy.High; bb != 0; bb = restBit(bb)) // Tamadas
 				{
-					next = firstBitHigh(bb); Move = BIT_MOVE(from, next, 1, 0, 0);
+					next = firstBit(bb & -bb) + 32;
 
-					if (useSee && !See(Move))
-					score =     106 + ((100 * MvvLvaScores[CHESS_BOARD[next]]) - MvvLvaScores[pieceType]); // Pontszam
-					else
-					score = 1000006 + ((100 * MvvLvaScores[CHESS_BOARD[next]]) - MvvLvaScores[pieceType]); // Pontszam
+					score = 1000006 + (MvvLvaScores100[CHESS_BOARD[next]] - MvvLvaScores[pieceType]); // Pontszam
 
-					AddCaptureMove(Move, score);
+					AddCaptureMove(BIT_MOVE(from, next, 1, 0, 0), score);
 				}
 
 				if (capturesOnly === false) // Ures mezok
 				{
 					for (bb = attacks.Low & ~xPiecesBB.Low; bb != 0; bb = restBit(bb)) {
-						next = firstBitLow(bb);
+						next = firstBit(bb & -bb);
 						AddQuietMove(from, next, 0, 0);
 					}
 					for (bb = attacks.High & ~xPiecesBB.High; bb != 0; bb = restBit(bb)) {
-						next = firstBitHigh(bb);
+						next = firstBit(bb & -bb) + 32;
 						AddQuietMove(from, next, 0, 0);
 					}
 				}
-
-				from = brd_pieceList[pieceIdx++]; // Kovetkezo Babu
+				from = brd_pieceList[++pieceIdx];
 			}
 		}
 	}
@@ -2644,7 +2478,6 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		var score  = 0; // Lepes pont
 		var next   = 0; // Ahova lepunk
 		var from   = 0; // Ahonnan lepunk
-		var b      = { Low : 0, High : 0 };
 		var checks = { Low : 0, High : 0 };
 		var unsafe = { Low : 0, High : 0 };
 
@@ -2654,42 +2487,34 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		var them = CurrentPlayer^8;
 		var xPiecesBB = GetAllPce();
-		var friendsBB = AllPceByColor(CurrentPlayer);
+		var friendsBB = AllPceBySide(CurrentPlayer);
 		var King = brd_pieceList[(CurrentPlayer|KING) << 4];
 		var front = CurrentPlayer === BLACK ? King + 8 : King - 8;
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 		// Gyalog tamadas
-		HighSQMask[front] ? checks.High |= NeighbourMask[front] & BitBoard[(them|PAWN) << 1 | HIGH]
-		                  : checks.Low  |= NeighbourMask[front] & BitBoard[(them|PAWN) << 1 | LOW];
+		HighSQMask[front]
+		? checks.High |= NeighbourMask[front] & BitBoard[(them|PAWN) << 1 | HIGH]
+		: checks.Low  |= NeighbourMask[front] & BitBoard[(them|PAWN) << 1 | LOW];
 
 		// Huszar tamadas
-		bb = PceAttacks(KNIGHT, King);
-		checks.Low  |= bb.Low  & BitBoard[(them|KNIGHT) << 1 | LOW];
-		checks.High |= bb.High & BitBoard[(them|KNIGHT) << 1 | HIGH];
+		var attacks = PceAttacks(KNIGHT, King);
+		checks.Low  |= attacks.Low  & BitBoard[(them|KNIGHT) << 1 | LOW];
+		checks.High |= attacks.High & BitBoard[(them|KNIGHT) << 1 | HIGH];
 
-		// Futo & Vezer tamadas
-		bb = PceAttacks(BISHOP, King);
-		b.Low  |= bb.Low  & (BitBoard[(them|BISHOP) << 1 | LOW]  | BitBoard[(them|QUEEN) << 1 | LOW]);
-		b.High |= bb.High & (BitBoard[(them|BISHOP) << 1 | HIGH] | BitBoard[(them|QUEEN) << 1 | HIGH]);
-
-		// Bastya & Vezer tamadas
-		bb = PceAttacks(ROOK, King);
-		b.Low  |= bb.Low  & (BitBoard[(them|ROOK) << 1 | LOW]  | BitBoard[(them|QUEEN) << 1 | LOW]);
-		b.High |= bb.High & (BitBoard[(them|ROOK) << 1 | HIGH] | BitBoard[(them|QUEEN) << 1 | HIGH]);
-
-		for (bb = b.Low; bb != 0; bb = restBit(bb)) {
-			from = firstBitLow(bb);
-			if (LineIsEmpty(from, King, xPiecesBB) == 0) {
+		// Futo, Bastya, Vezer tamadas
+		for (bb = SliderAttackers(King, them, LOW); bb != 0; bb = restBit(bb)) {
+			from = firstBit(bb & -bb);
+			if (LineBlocker(from, King, xPiecesBB) == 0) {
 				checks.Low  |= SetMask[from];
 				unsafe.Low  |= BetweenBBMask[BetweenBBidx(from, King, LOW)]  | BehindBBMask[BetweenBBidx(from, King, LOW)];
 				unsafe.High |= BetweenBBMask[BetweenBBidx(from, King, HIGH)] | BehindBBMask[BetweenBBidx(from, King, HIGH)];
 			}
 		}
-		for (bb = b.High; bb != 0; bb = restBit(bb)) {
-			from = firstBitHigh(bb);
-			if (LineIsEmpty(from, King, xPiecesBB) == 0) {
+		for (bb = SliderAttackers(King, them, HIGH); bb != 0; bb = restBit(bb)) {
+			from = firstBit(bb & -bb) + 32;
+			if (LineBlocker(from, King, xPiecesBB) == 0) {
 				checks.High |= SetMask[from];
 				unsafe.Low  |= BetweenBBMask[BetweenBBidx(from, King, LOW)]  | BehindBBMask[BetweenBBidx(from, King, LOW)];
 				unsafe.High |= BetweenBBMask[BetweenBBidx(from, King, HIGH)] | BehindBBMask[BetweenBBidx(from, King, HIGH)];
@@ -2699,12 +2524,12 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 		// Kiraly lepesei
-		var attacks = PceAttacks(KING, King);
+		attacks = PceAttacks(KING, King);
 		for (bb = attacks.Low & ~unsafe.Low & ~friendsBB.Low; bb != 0; bb = restBit(bb)) {
 
-			if (CHESS_BOARD[next = firstBitLow(bb)] != 0) // Ellenfel
+			if (CHESS_BOARD[next = firstBit(bb & -bb)] != 0) // Ellenfel
 			{
-				score = 1000006 + ((100 * MvvLvaScores[CHESS_BOARD[next]]) - MvvLvaScores[KING]); // Pontszam
+				score = 1000006 + (MvvLvaScores100[CHESS_BOARD[next]] - MvvLvaScores[KING]); // Pontszam
 
 				AddCaptureMove(BIT_MOVE(King, next, 1, 0, 0), score);
 			} else {
@@ -2713,9 +2538,9 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		}
 		for (bb = attacks.High & ~unsafe.High & ~friendsBB.High; bb != 0; bb = restBit(bb)) {
 
-			if (CHESS_BOARD[next = firstBitHigh(bb)] != 0) // Ellenfel
+			if (CHESS_BOARD[next = firstBit(bb & -bb) + 32] != 0) // Ellenfel
 			{
-				score = 1000006 + ((100 * MvvLvaScores[CHESS_BOARD[next]]) - MvvLvaScores[KING]); // Pontszam
+				score = 1000006 + (MvvLvaScores100[CHESS_BOARD[next]] - MvvLvaScores[KING]); // Pontszam
 
 				AddCaptureMove(BIT_MOVE(King, next, 1, 0, 0), score);
 			} else {
@@ -2723,12 +2548,11 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			}
 		}
 
-		if ((PopCount(checks.Low) + PopCount(checks.High)) > 1) return; // Dupla Sakknal csak a Kiraly lephet :(
+		if (PopCount64(checks.Low, checks.High) > 1) return; // Dupla Sakknal csak a Kiraly lephet :(
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		var checkSQ = checks.Low ? firstBitLow(checks.Low) : firstBitHigh(checks.High); // Tamado mezo!
-
+		var checkSQ = checks.Low ? firstBit(checks.Low & -checks.Low) : firstBit(checks.High & -checks.High) + 32;
 		var target = { // Kiraly es az egyetlen tamado kozotti mezok + tamado!
 		Low  : BetweenBBMask[BetweenBBidx(checkSQ, King, LOW)]  | checks.Low,
 		High : BetweenBBMask[BetweenBBidx(checkSQ, King, HIGH)] | checks.High };
@@ -2739,16 +2563,15 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		var inc = CurrentPlayer ? 8 : -8;
 		var StartRank   = CurrentPlayer ? RANKS.RANK_7 : RANKS.RANK_2;
 		var PromoteRank = CurrentPlayer ? RANKS.RANK_2 : RANKS.RANK_7;
-
-		var pieceIdx = (CurrentPlayer|PAWN) << 4;
-		from = brd_pieceList[pieceIdx++];
+		var pieceIdx = (CurrentPlayer | PAWN) << 4;
+		from = brd_pieceList[pieceIdx];
 		while (from != EMPTY)
 		{
 			next = from + inc; // Elore lepes
 
 			if (CHESS_BOARD[next] == 0) // Ures mezo
 			{
-				bb = HighSQMask[next] ? target.High : target.Low;
+				bb = next > 31 ? target.High : target.Low;
 
 				if (bb & SetMask[next]) // Blokkolas
 				{
@@ -2763,7 +2586,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 					}
 				}
 				// Blokkolas dupla lepessel
-				if ((bb & SetMask[next + inc]) && TableRanks[from] == StartRank && CHESS_BOARD[next + inc] == 0)
+				else if ((bb & SetMask[next + inc]) && TableRanks[from] == StartRank && CHESS_BOARD[next + inc] == 0)
 				{
 					AddQuietMove(from, next + inc, 0, 0);
 				}
@@ -2771,11 +2594,11 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 			for (bb = NeighbourMask[next]; bb != 0; bb = restBit(bb)) // Tamadasok
 			{
-				next = HighSQMask[next] ? firstBitHigh(bb) : firstBitLow(bb); // from [+-] 7/9
+				next = next > 31 ? firstBit(bb & -bb) + 32 : firstBit(bb & -bb); // from [+-] 7/9
 
 				if (next == checkSQ) // Sakkado babu tamadasa
 				{
-					score = 1000005 + (100 * MvvLvaScores[CHESS_BOARD[next]]); // Pontszam
+					score = 1000005 + MvvLvaScores100[CHESS_BOARD[next]]; // Pontszam
 
 					if (TableRanks[from] == PromoteRank) // Gyalog bevaltas
 					{
@@ -2793,8 +2616,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 					AddCaptureMove(BIT_MOVE(from, next, 1, 0, 0), score);
 				}
 			}
-
-			from = brd_pieceList[pieceIdx++]; // Kovetkezo Babu
+			from = brd_pieceList[++pieceIdx];
 		}
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -2803,18 +2625,18 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		for (var pieceType = KNIGHT; pieceType <= QUEEN; pieceType++)
 		{
 			pieceIdx = (CurrentPlayer | pieceType) << 4;
-			from = brd_pieceList[pieceIdx++];
+			from = brd_pieceList[pieceIdx];
 			while (from != EMPTY)
 			{
-				var attacks = AttacksFrom(pieceType, from, xPiecesBB);
+				attacks = AttacksFrom(pieceType, from, xPiecesBB);
 
 				for (bb = attacks.Low & target.Low; bb != 0; bb = restBit(bb)) // Tamadas & Blokkolas
 				{
-					next = firstBitLow(bb);
+					next = firstBit(bb & -bb);
 
 					if (next == checkSQ) // Sakkado babu tamadasa
 					{
-						score = 1000006 + ((100 * MvvLvaScores[CHESS_BOARD[next]]) - MvvLvaScores[pieceType]); // Pontszam
+						score = 1000006 + (MvvLvaScores100[CHESS_BOARD[next]] - MvvLvaScores[pieceType]); // Pontszam
 
 						AddCaptureMove(BIT_MOVE(from, next, 1, 0, 0), score);
 					} else {
@@ -2823,41 +2645,39 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 				}
 				for (bb = attacks.High & target.High; bb != 0; bb = restBit(bb)) // Tamadas & Blokkolas
 				{
-					next = firstBitHigh(bb);
+					next = firstBit(bb & -bb) + 32;
 
 					if (next == checkSQ) // Sakkado babu tamadasa
 					{
-						score = 1000006 + ((100 * MvvLvaScores[CHESS_BOARD[next]]) - MvvLvaScores[pieceType]); // Pontszam
+						score = 1000006 + (MvvLvaScores100[CHESS_BOARD[next]] - MvvLvaScores[pieceType]); // Pontszam
 
 						AddCaptureMove(BIT_MOVE(from, next, 1, 0, 0), score);
 					} else {
 						AddQuietMove(from, next, 0, 0); // Blokkolas
 					}
 				}
-
-				from = brd_pieceList[pieceIdx++]; // Kovetkezo Babu
+				from = brd_pieceList[++pieceIdx];
 			}
 		}
 	}
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-	function AddQuietMove(from, to, prom, castle) {
-
-		var Move = BIT_MOVE(from, to, 0, prom, castle);
-
-		if (prom != 0) { // Gyalog bevaltas
-			var score = 950000 + prom;
-		} else if (SearchKillers[BoardPly][0] == Move) { // Gyilkos lepes 1.
-			var score = 900000;
-		} else if (SearchKillers[BoardPly][1] == Move) { // Gyilkos lepes 2.
-			var score = 800000;
-		} else {
-			var score = 1000 + HistoryTable[CHESS_BOARD[from]][to]; // Elozmeny tabla alapjan
+	function GetQuietScore(move) {
+		if (PROMOTED(move) != 0) { // Gyalog bevaltas
+			return 950000 + PROMOTED(move);
+		} else if (SearchKillers[(BoardPly << 1) | 0] == move) { // Gyilkos lepes 1.
+			return 900000;
+		} else if (SearchKillers[(BoardPly << 1) | 1] == move) { // Gyilkos lepes 2.
+			return 800000;
 		}
+		return 1000 + HistoryTable[(CHESS_BOARD[FROMSQ(move)] << 6) | TOSQ(move)]; // Elozmeny
+	}
 
-		brd_moveList[brd_moveStart[BoardPly + 1]] = Move;
-		brd_moveScores[brd_moveStart[BoardPly + 1]++] = score;
+	function AddQuietMove(from, to, prom, castle) {
+		var move = BIT_MOVE(from, to, 0, prom, castle);
+		brd_moveList[brd_moveStart[BoardPly + 1]] = move;
+		brd_moveScores[brd_moveStart[BoardPly + 1]++] = GetQuietScore(move);
 	}
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -2869,27 +2689,37 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-	function PickNextMove(moveNum) {
-
+	function PickNextMove(moveNum, useSee) {
 		var bestNum = moveNum;
-		for (var index = moveNum; index < brd_moveStart[BoardPly + 1]; index++) {
-			if (brd_moveScores[index] > brd_moveScores[bestNum]) {
-				bestNum = index;
+		var bestScore = brd_moveScores[bestNum];
+		var moveListEnd = brd_moveStart[BoardPly + 1];
+		for (var index = moveNum; index < moveListEnd; index++) {
+			var moveScore = brd_moveScores[index];
+			if (moveScore <= bestScore) continue;
+			if (useSee && moveScore > 1000000 && moveScore < 2000000 && !See(brd_moveList[index])) { // bad
+				brd_moveScores[index] = moveScore -= 1000000;
+				if (moveScore <= bestScore) continue;
 			}
+			bestScore = moveScore;
+			bestNum = index;
 		}
+		if (bestNum != moveNum) {
+			OrderBestMove(bestNum, moveNum);
+		}
+	}
 
-		var temp = brd_moveList[moveNum];
-		brd_moveList[moveNum] = brd_moveList[bestNum];
-		brd_moveList[bestNum] = temp;
-
-		temp = brd_moveScores[moveNum];
-		brd_moveScores[moveNum] = brd_moveScores[bestNum];
-		brd_moveScores[bestNum] = temp;
+	function OrderBestMove(best, curr) {
+		var temp = brd_moveList[curr];
+		brd_moveList[curr] = brd_moveList[best];
+		brd_moveList[best] = temp;
+		temp = brd_moveScores[curr];
+		brd_moveScores[curr] = brd_moveScores[best];
+		brd_moveScores[best] = temp;
 	}
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-	function CheckUp() {
+	function CheckTime() {
 		var currentTime = Date.now() - StartTime;
 		if (CurrDepth >= 2 && currentTime >= MinSearchTime) {
 			if (!ScoreDrop || currentTime >= MaxSearchTime) {
@@ -2900,17 +2730,21 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-	function Quiescence(alpha, beta, depth, inCheck, pv) {
-
-		if ((Nodes & 2047) == 0) { // Ido ellenorzese
-			CheckUp();
-		}
+	function Quiescence(alpha, beta, depth, inCheck) {
 
 		Nodes++; // Csomopontok novelese
 
-		pv[0] = NOMOVE; // Hack: Pv torlese
+		var pvIdx = BoardPly << 6;
 
-		if (IsRepetition()) { // Lepesismetles
+		PvLineMoves[pvIdx] = NOMOVE;
+
+		if ((Nodes & 255) == 0) { // Ido check
+			CheckTime();
+		}
+
+		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+		if (IsRepetition(inCheck)) { // Lepesismetles
 			return 0;
 		}
 
@@ -2964,33 +2798,27 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 		var is_pv = (beta != alpha + 1);
-		var newPv = new Array(MaxDepth);
-
-		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
 		var oldAlpha = alpha; // Alpha mentese
 		var bestMove = NOMOVE; // Legjobb lepes
 		var score = -INFINITE; // Pont nullazas
-		var check = NOT_IN_CHECK; // Sakk lepes
 		var capturedPCE = NOMOVE; // Leutott babu
 		var currentMove = NOMOVE; // Aktualis lepes
-		var deltaMargin = bestScore + 100; // Delta Margo
-		inCheck ? GenerateEvasions() : GenerateAllMoves(true, false);
+		var willCheck = NOT_IN_CHECK; // Sakk lepes
+		var deltaMargin = bestScore + 100; // Delta margo
+		inCheck ? GenerateEvasions() : GenerateAllMoves(true);
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		for (var index = brd_moveStart[BoardPly]; index < brd_moveStart[BoardPly + 1]; index++)
+		for (var index = brd_moveStart[BoardPly], moveListEnd = brd_moveStart[BoardPly + 1]; index < moveListEnd; index++)
 		{
-			PickNextMove(index);
-
+			PickNextMove(index, false);
 			currentMove = brd_moveList[index];
-			check       = givesCheck(currentMove);
+			willCheck   = givesCheck(currentMove);
 			capturedPCE = CHESS_BOARD[TOSQ(currentMove)];
 
-			if (!inCheck && !check && !PROMOTED(currentMove) && (capturedPCE & 0x07) !== QUEEN) // Delta metszes
+			if (!inCheck && !willCheck && !PROMOTED(currentMove) && (capturedPCE & 0x07) !== QUEEN) // Delta metszes
 			{
 				var futileValue = deltaMargin + DeltaValue[capturedPCE ? capturedPCE : PAWN]; // En Passant..?
-
 				if (futileValue <= alpha) {
 					if (bestScore < futileValue) {
 						bestScore = futileValue;
@@ -3009,19 +2837,15 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 			makeMove(currentMove); // Lepes ervenyesitese
 
-			score = -Quiescence(-beta, -alpha, depth-1, check, newPv);
+			score = -Quiescence(-beta, -alpha, depth-1, willCheck);
 
 			unMakeMove(); // Lepes visszavonasa
-
-			if (TimeStop == 1) { // Ido vagas
-				return 0;
-			}
 
 			if (score > bestScore) {
 				bestScore = score;
 				if (score > alpha) {
 					if (is_pv) {
-						BuildPv(pv, newPv, currentMove);
+						BuildPv(currentMove, pvIdx);
 					}
 					if (score >= beta) {
 						if (inCheck || depth == DEPTH_ZERO) {
@@ -3048,28 +2872,34 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-	function AlphaBeta(alpha, beta, depth, nullMove, inCheck, pv) {
+	function AlphaBeta(alpha, beta, depth, nullMove, inCheck) {
 
 		if (depth <= DEPTH_ZERO) { // Melyseg eleresekor kiertekeles
-			return Quiescence(alpha, beta, DEPTH_ZERO, inCheck, pv);
+			return Quiescence(alpha, beta, DEPTH_ZERO, inCheck);
 		}
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-		if ((Nodes & 2047) == 0) { // Ido ellenorzese
-			CheckUp();
-		}
 
 		Nodes++; // Csomopontok novelese
 
-		pv[0] = NOMOVE; // Hack: Pv torlese
+		var pvIdx = BoardPly << 6;
+
+		PvLineMoves[pvIdx] = NOMOVE;
+
+		if ((Nodes & 255) == 0) { // Ido check
+			CheckTime();
+		}
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		if (BoardPly != 0) { // Gyermek csomopont
+		if (BoardPly > 0) { // Gyermek csomopont
 
-			if (IsRepetition()) { // Lepesismetles
+			if (TimeStop == 1) { // Ido vagas
 				return 0;
+			}
+
+			if (IsRepetition(inCheck)) { // Lepesismetles
+				return GetDrawValue();
 			}
 
 			if (BoardPly >= MaxDepth) { // Melyseg limit
@@ -3086,11 +2916,9 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		var pruneNode = false;
 		var score = -INFINITE;
 		var staticEval = -INFINITE;
 		var is_pv = (beta != alpha + 1);
-		var newPv = new Array(MaxDepth);
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -3119,24 +2947,21 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		if (!is_pv && !inCheck
+		var pruneNode = !is_pv && !inCheck // Metszheto csomopont..?
 		&& (brd_pieceCount[CurrentPlayer | KNIGHT] != 0
 		 || brd_pieceCount[CurrentPlayer | BISHOP] != 0
 		 || brd_pieceCount[CurrentPlayer | ROOK]   != 0
-		 || brd_pieceCount[CurrentPlayer | QUEEN]  != 0)) { // Metszheto csomopont
+		 || brd_pieceCount[CurrentPlayer | QUEEN]  != 0);
 
-			if (staticEval == -INFINITE && (nullMove || depth <= 4)) { // Futility depth
-				staticEval = Evaluation();
-			}
-
-			pruneNode = true;
+		if (staticEval == -INFINITE && pruneNode && (nullMove || depth <= 4)) { // Futility depth
+			staticEval = Evaluation();
 		}
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 		if (pruneNode && nullMove && !isMate(beta)) // Metszesek
 		{
-			if (depth <= 3 && (score = staticEval - 100 * depth) >= beta && PawnOnSeventh() == 0) { // Beta
+			if (depth <= 3 && (score = staticEval - 100 * depth) >= beta && PawnOnSeventh() == 0) {
 				return score;
 			}
 
@@ -3146,7 +2971,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			{
 				makeNullMove();
 
-				score = -AlphaBeta(-beta, -beta+1, depth-4, 0, NOT_IN_CHECK, newPv);
+				score = -AlphaBeta(-beta, -beta+1, depth-4-(depth >> 3), 0, NOT_IN_CHECK);
 
 				unMakeNullMove();
 
@@ -3161,9 +2986,9 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 			// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-			if (depth <= 1 && hashMove == NOMOVE && staticEval + 300 < beta && PawnOnSeventh() == 0) { // Razor
-				score = Quiescence(alpha, beta, DEPTH_ZERO, NOT_IN_CHECK, newPv);
-				if (score < beta) {
+			if (depth <= 2 && hashMove == NOMOVE && staticEval + 300 * depth < beta && PawnOnSeventh() == 0) {
+				score = Quiescence(alpha, beta, DEPTH_ZERO, NOT_IN_CHECK);
+				if (score < beta) { // Razor
 					return score;
 				}
 			}
@@ -3171,35 +2996,38 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		if (is_pv && BoardPly != 0 && depth >= 4 && hashMove == NOMOVE) { // Belso iterativ melyites /IID/
-			score = AlphaBeta(alpha, beta, depth-2, 0, inCheck, newPv);
-			if (score > alpha) hashMove = newPv[0];
+		if (is_pv && BoardPly > 0 && depth >= 4 && hashMove == NOMOVE) { // Belso iterativ melyites /IID/
+			score = AlphaBeta(alpha, beta, depth-2, 0, inCheck);
+			if (score > alpha) hashMove = PvLineMoves[pvIdx];
 		}
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 		score = -INFINITE; // Pont nullazas
-		var E = 0; // Kiterjesztes valtozo
 		var R = 0; // LMR Dinamikus valtozo
 		var legalMove = 0; // Ervenyes lepes
 		var moveScore = 0; // Lepes pontszama
 		var oldAlpha = alpha; // Alpha mentese
 		var bestMove = NOMOVE; // Legjobb lepes
 		var dangerous = false; // Veszelyes..??
-		var check = NOT_IN_CHECK; // Sakk lepes
+		var willCheck = NOT_IN_CHECK; // Sakk lepes
 		var currentMove = NOMOVE; // Aktualis lepes
 		var bestScore = -INFINITE; // Legjobb pontszam
-		var playedMoves = new Array(); // Lepesek tomb
-		var futileValue = staticEval + depth * 100; // Futile ertek
-		inCheck ? GenerateEvasions() : GenerateAllMoves(false, true);
+		var E = (is_pv || depth < 5) && inCheck; // Sakk++
+		var futileValue = staticEval + depth * 100; // Futile
+		inCheck ? GenerateEvasions() : GenerateAllMoves(false);
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
+		var moveListStart = brd_moveStart[BoardPly];
+		var moveListEnd = brd_moveStart[BoardPly + 1];
 		if (hashMove != NOMOVE) { // Atultetesi tablabol lepes
-			for (var index = brd_moveStart[BoardPly]; index < brd_moveStart[BoardPly + 1]; index++)
-			{
-				if (brd_moveList[index] == hashMove) { // Elore soroljuk
+			for (var index = moveListStart; index < moveListEnd; index++) {
+				if (brd_moveList[index] === hashMove) { // Elore soroljuk
 					brd_moveScores[index] = 2000000;
+					if (index != moveListStart) {
+						OrderBestMove(index, moveListStart);
+					}
 					break;
 				}
 			}
@@ -3207,21 +3035,20 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		for (var index = brd_moveStart[BoardPly]; index < brd_moveStart[BoardPly + 1]; index++)
+		for (var index = moveListStart; index < moveListEnd; index++)
 		{
-			PickNextMove(index);
-
+			PickNextMove(index, !inCheck);
 			currentMove = brd_moveList[index];
 			moveScore = brd_moveScores[index];
-			check   = givesCheck(currentMove);
+			willCheck = givesCheck(currentMove);
 
-			dangerous = inCheck || check || moveScore >= 800000 || (currentMove & DANGER_MASK) || PawnPush(currentMove);
+			dangerous = inCheck || willCheck || moveScore >= 800000 || (currentMove & DANGER_MASK) || PawnPush(currentMove);
 
-			if (!dangerous && depth <= 2 && pruneNode && !isMate(bestScore) && legalMove > depth*5) { // Late Move Pruning
+			if (!dangerous && depth <= 2 && pruneNode && !isMate(bestScore) && legalMove > 5 * depth) { // Late Move Pruning
 				continue;
 			}
 
-			if (!dangerous && depth <= 4 && pruneNode && !isMate(bestScore) && futileValue < alpha) { // Futility Pruning
+			if (!dangerous && depth <= 4 && pruneNode && !isMate(bestScore) && futileValue <= alpha) { // Futility Pruning
 				continue;
 			}
 
@@ -3239,35 +3066,28 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 			makeMove(currentMove); // Lepes ervenyesitese
 
-			E = 0; // "E" nullazasa
-			R = 0; // "R" nullazasa
-
-			if (inCheck && (is_pv || depth < 5)) { // Sakk kiterjesztes
-				E = 1;
-			}
-
-			if (!dangerous && depth >= 3 && legalMove >= 3) // Late Move Reduction
-			{
-				R = is_pv ? Math.min(Math.log(depth) * Math.log(legalMove) * 0.33 | 0, depth-2)
-				          : Math.min(Math.log(depth) * Math.log(legalMove) * 0.66 | 0, depth-2);
-			}
+			R = (dangerous || depth <= 2 || legalMove <= 2) // Late Move Reduction
+			? 0
+			: is_pv
+			? Math.min(Math.log(depth) * Math.log(legalMove) * 0.33 | 0, depth-2)
+			: Math.min(Math.log(depth) * Math.log(legalMove) * 0.66 | 0, depth-2);
 
 			if ((is_pv && legalMove != 0) || R != 0) {
-				score = -AlphaBeta(-alpha-1, -alpha, depth+E-R-1, 1, check, newPv); // PVS-LMR
+				score = -AlphaBeta(-alpha-1, -alpha, depth+E-R-1, 1, willCheck); // PVS-LMR
 				if (score > alpha) {
-					score = -AlphaBeta(-beta, -alpha, depth+E-1, 1, check, newPv); // Full
+					score = -AlphaBeta(-beta, -alpha, depth+E-1, 1, willCheck); // Full
 				}
 			} else {
-				score = -AlphaBeta(-beta, -alpha, depth+E-1, 1, check, newPv); // Full
+				score = -AlphaBeta(-beta, -alpha, depth+E-1, 1, willCheck); // Full
 			}
-
-			playedMoves[legalMove++] = currentMove; // Ervenyes lepesek
 
 			unMakeMove(); // Lepes visszavonasa
 
 			if (TimeStop == 1) { // Ido vagas
 				return 0;
 			}
+
+			PlayedMoves[(BoardPly << 8) | legalMove++] = currentMove; // History
 
 			if (BoardPly == 0) { // Elemzeshez
 				RootMovesResult[currentMove] = { score: score, depth: depth };
@@ -3279,24 +3099,24 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 				if (is_pv && (legalMove == 1 || score > alpha)) {
 
-					BuildPv(pv, newPv, currentMove);
+					BuildPv(currentMove, pvIdx);
 
 					if (BoardPly == 0) {
-						UpdatePv(currentMove, score, depth, alpha, beta, pv);
+						UpdatePv(currentMove, score, depth, alpha, beta, pvIdx);
 					}
 				}
 
 				if (score > alpha) {
 					if (score >= beta) {
 						if (!inCheck && (currentMove & TACTICAL_MASK) == 0) { // Update Killers & History
-							if (SearchKillers[BoardPly][0] != currentMove) {
-								SearchKillers[BoardPly][1] = SearchKillers[BoardPly][0];
-								SearchKillers[BoardPly][0] = currentMove;
+							if (SearchKillers[(BoardPly << 1) | 0] != currentMove) {
+								SearchKillers[(BoardPly << 1) | 1] = SearchKillers[(BoardPly << 1) | 0];
+								SearchKillers[(BoardPly << 1) | 0] = currentMove;
 							}
 							HistoryGood(currentMove);
 
 							for (var h = 0; h < legalMove-1; h++) {
-								HistoryBad(playedMoves[h]);
+								HistoryBad(PlayedMoves[(BoardPly << 8) | h]);
 							}
 						}
 						StoreHash(currentMove, bestScore, staticEval, FLAG_LOWER, depth);
@@ -3322,14 +3142,14 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 	function HistoryGood(move) {
-		var hist = HistoryTable[CHESS_BOARD[FROMSQ(move)]][TOSQ(move)];
-		HistoryTable[CHESS_BOARD[FROMSQ(move)]][TOSQ(move)] += (2048 - hist) >> 5;
+		var hist = HistoryTable[(CHESS_BOARD[FROMSQ(move)] << 6) | TOSQ(move)];
+		HistoryTable[(CHESS_BOARD[FROMSQ(move)] << 6) | TOSQ(move)] += (2048 - hist) >> 5;
 	}
 
 	function HistoryBad(move) {
 		if ((move & TACTICAL_MASK) == 0) {
-			var hist = HistoryTable[CHESS_BOARD[FROMSQ(move)]][TOSQ(move)];
-			HistoryTable[CHESS_BOARD[FROMSQ(move)]][TOSQ(move)] -= hist >> 5;
+			var hist = HistoryTable[(CHESS_BOARD[FROMSQ(move)] << 6) | TOSQ(move)];
+			HistoryTable[(CHESS_BOARD[FROMSQ(move)] << 6) | TOSQ(move)] -= hist >> 5;
 		}
 	}
 
@@ -3339,61 +3159,55 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		HashDate = 0; // Hash ido tag nullazas
 		HashUsed = 0; // Hash hasznalat nullazas
 		InitEvalMasks(); // Bitmaszk inicializalas
-		brd_PawnTable = null; // Hash tabla urites
-		brd_PawnTable = new Array(PAWNENTRIES);
-		hash_move     = new Uint32Array(HASHENTRIES);
-		hash_date     = new Uint16Array(HASHENTRIES);
-		hash_eval     = new Int16Array (HASHENTRIES);
-		hash_lock     = new Int32Array (HASHENTRIES);
-		hash_score    = new Int16Array (HASHENTRIES);
-		hash_flags    = new Uint8Array (HASHENTRIES);
-		hash_depth    = new Uint8Array (HASHENTRIES);
+		PawnHashEval.fill(0); PawnHashLock.fill(0);
+		PawnHashPassW.fill(EMPTY); PawnHashPassB.fill(EMPTY);
+		HashTableMove.length  === HASHENTRIES ? HashTableMove.fill(0)  : HashTableMove  = new Int32Array(HASHENTRIES);
+		HashTableDate.length  === HASHENTRIES ? HashTableDate.fill(0)  : HashTableDate  = new Int16Array(HASHENTRIES);
+		HashTableEval.length  === HASHENTRIES ? HashTableEval.fill(0)  : HashTableEval  = new Int16Array(HASHENTRIES);
+		HashTableLock.length  === HASHENTRIES ? HashTableLock.fill(0)  : HashTableLock  = new Int32Array(HASHENTRIES);
+		HashTableScore.length === HASHENTRIES ? HashTableScore.fill(0) : HashTableScore = new Int16Array(HASHENTRIES);
+		HashTableFlags.length === HASHENTRIES ? HashTableFlags.fill(0) : HashTableFlags = new Int8Array (HASHENTRIES);
+		HashTableDepth.length === HASHENTRIES ? HashTableDepth.fill(0) : HashTableDepth = new Int8Array (HASHENTRIES);
 	}
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 	function ClearForSearch() {
-
-		Nodes = 0; BoardPly = 0; BestMove = 0; TimeStop = 0;
-
-		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-		for (var i = 0; i < MaxDepth; i++) { // Gyilkosok
-			SearchKillers[i] = [0, 0];
-		}
-
-		for (var i = 0; i < 15; i++) { // Elozmeny tabla
-			HistoryTable[i] = new Array(64);
-			for (var j = 0; j < 64; j++) {
-				HistoryTable[i][j] = 1024;
-			}
-		}
+		Nodes = 0;
+		BoardPly = 0;
+		BestMove = 0;
+		TimeStop = 0;
+		ScoreDrop = 0;
+		HistoryTable.fill(1024);
+		SearchKillers.fill(NOMOVE);
 	}
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 	function ClearForNewGame() {
+		BoardPly = 0;
 		MoveCount = 0;
 		brd_fiftyMove = 0;
-		MOVE_HISTORY = new Array();
+		MOVE_HISTORY.splice(0);
+		HIDDEN_HISTORY.fill(0);
 	}
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 	function SearchPosition(maxSearchDepth) {
 
-		ClearForSearch(); // Nullazas
-
+		ClearForSearch();
 		RootMovesResult = {};
+		StartTime = Date.now();
 		var alpha = -INFINITE;
 		var beta = INFINITE;
 		var countMove = 0;
 		var score = 0;
-		ScoreDrop = 0;
 		HashDate++;
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
+		if (UI_HOST == HOST_TANKY) sendMessage('startedtime '+StartTime);
 		if (UI_HOST == HOST_TANKY && maxSearchDepth > 0) { // Also szint
 			MaxDepth = maxSearchDepth;
 		} else {
@@ -3404,22 +3218,17 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		var inCheck = isCheck(CurrentPlayer); // Sakk..?
 
-		inCheck ? GenerateEvasions() : GenerateAllMoves(false, false);
+		inCheck ? GenerateEvasions() : GenerateAllMoves(false);
 
-		for (var index = brd_moveStart[0]; index < brd_moveStart[1]; index++)
-		{
-			if (isLegal(brd_moveList[index])) { // Ervenytelen lepes
-				countMove++;
+		for (var index = brd_moveStart[0]; index < brd_moveStart[1]; index++) {
+			if (isLegal(brd_moveList[index])) { // Ervenyes lepes
+				if (++countMove > 1) break;
 			}
 		}
 
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		var pv = new Array(MaxDepth + 1);
-
-		StartTime = Date.now(); // Kezdo ido!
-
-		if (UI_HOST == HOST_TANKY) sendMessage('startedtime '+StartTime); // Kuldes!
+		PvLineMoves.fill(NOMOVE); // Nullazas
 
 		search :
 
@@ -3429,10 +3238,12 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 			for (var margin = (CurrDepth >= 4 ? 10 : INFINITE); ; margin *= 2) { // ablak
 
+				CheckTime(); // FONTOS: (Nodes & 255) != 0
+
 				alpha = Math.max(score - margin, -INFINITE);
 				beta  = Math.min(score + margin,  INFINITE);
 
-				score = AlphaBeta(alpha, beta, CurrDepth, 1, inCheck, pv);
+				score = AlphaBeta(alpha, beta, CurrDepth, 1, inCheck);
 
 				if (TimeStop == 1) break search; // Lejart az ido
 
@@ -3459,16 +3270,14 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 				score: RootMovesResult[x].score,
 				depth: RootMovesResult[x].depth
 			};
-		})
-		.sort(function(a, b) {
+		}).sort(function(a, b) {
 			return b.score - a.score;
-		})
-		.slice(0, 4);
+		}).slice(0, 4);
 	}
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-	function UpdatePv(Move, score, depth, alpha, beta, pv) {
+	function UpdatePv(move, score, depth, alpha, beta, idx) {
 
 		var flags = FLAG_NONE;
 		if (score > alpha) flags |= FLAG_LOWER;
@@ -3476,13 +3285,13 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		ScoreDrop = depth > 1 && (flags == FLAG_UPPER || BestMove.score - 30 >= score);
 
-		BestMove = { move : Move, score : score, depth : depth };
+		BestMove = { move, score, depth };
 
-		var time = (Date.now() - StartTime); // Keresesi ido
+		var time = Date.now() - StartTime;
 
-		var pvLine = ''; // Pv
-		for (var index = 0; pv[index] != NOMOVE; index++) {
-			pvLine += ' '+FormatMove(pv[index]);
+		var pvLine = '';
+		for (var index = idx; PvLineMoves[index] != NOMOVE; index++) {
+			pvLine += ' '+FormatMove(PvLineMoves[index]);
 		}
 
 		if (score < -ISMATE) {
@@ -3496,14 +3305,14 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 		if (flags == FLAG_LOWER) score += ' lowerbound';
 		if (flags == FLAG_UPPER) score += ' upperbound';
 
-		sendMessage('info currmove '+FormatMove(Move)+' depth '+depth+' score '+score+' nodes '+Nodes+' time '+time+' pv'+pvLine);
+		sendMessage('info currmove '+FormatMove(move)+' depth '+depth+' score '+score+' nodes '+Nodes+' time '+time+' pv'+pvLine);
 	}
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-	function BuildPv(pv, newPv, move) {
-		pv[0] = move;
-		for (var i = 0; (pv[i+1] = newPv[i]); i++);
+	function BuildPv(move, idx) {
+		PvLineMoves[idx] = move;
+		for (var i = idx; (PvLineMoves[i+1] = PvLineMoves[i+MaxDepth]) != NOMOVE; i++);
 	}
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -3649,44 +3458,45 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 					case 'go':
 
-					    MaxSearchTime  = getInt('movetime', 0, tokens); // Time!
-					    MinSearchTime  = MaxSearchTime * 1; // Hack: Early exit!
-					var maxSearchDepth = getInt('depth'   , 0, tokens); // Depth
+						var fixDepth = getInt('depth', 0, tokens);
+						MinSearchTime = getInt('movetime', 0, tokens);
 
-						if (MaxSearchTime == 0)
+						if (MinSearchTime == 0) // Smart search..
 						{
 							var movesToGo = getInt('movestogo', 30, tokens);
-
-							if (CurrentPlayer == WHITE) {
-								var Inc  = getInt('winc' , 0, tokens);
-								var Time = getInt('wtime', 0, tokens);
-							} else {
-								var Inc  = getInt('binc' , 0, tokens);
-								var Time = getInt('btime', 0, tokens);
+							if (movesToGo > 30 || movesToGo <= 0) { // Limit
+								movesToGo = 30;
 							}
 
-							Time = Time - Math.min(1000, Time / 10);
+							if (CurrentPlayer == WHITE) {
+								var inc  = getInt('winc' , 0, tokens);
+								var time = getInt('wtime', 0, tokens);
+							} else {
+								var inc  = getInt('binc' , 0, tokens);
+								var time = getInt('btime', 0, tokens);
+							}
 
-							var total = Time + Inc * (movesToGo - 1);
+							var reserve = Math.min(1000, Math.max(50, time / 10));
+							time = Math.max(time - reserve, 0); // min 50ms for lag
+							var total = time + inc * (movesToGo - 1);
+							MaxSearchTime = Math.min(total * 0.5, time) | 0;
+							MinSearchTime = Math.min(total / movesToGo, time) | 0;
 
-							MaxSearchTime = Math.min(total * 0.5, Time) | 0;
-
-							MinSearchTime = Math.min(total / movesToGo, Time) | 0;
+							if (fixDepth > 0 && MinSearchTime == 0) // Nincs ido + fix melyseg..
+							{
+								MinSearchTime = 1000 * 3600; // 1 hour
+							}
 						}
-
-						if (maxSearchDepth > 0) { // Fix melysegnel max 1 ora!
-							MinSearchTime = 1000 * 3600;
-						}
-
-						if (MaxSearchTime < MinSearchTime) { // Max >= Min!
+						else // Fix ido..
+						{
 							MaxSearchTime = MinSearchTime;
 						}
 
-						if (maxSearchDepth > 64 || maxSearchDepth <= 0) { // Limit
-							maxSearchDepth = 64;
+						if (fixDepth > 64 || fixDepth <= 0) { // Limit
+							fixDepth = 64;
 						}
 
-						SearchPosition(maxSearchDepth); // Kereses..
+						SearchPosition(fixDepth); // Kereses..
 
 					break;
 
@@ -3714,9 +3524,8 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 							HASHENTRIES = (val << 20) / 16;
 							HASHMASK = HASHENTRIES - 4;
-							InitEnginSearch();
-
 							uci_options[key] = val;
+							InitEnginSearch();
 
 							sendMessage('info string Hash changed to '+val+' MB');
 						}
@@ -3741,18 +3550,6 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 				// ############################################################################################
 
-					case 'eval':
-
-						ShowEvalForUI = true;
-
-						sendMessage('info string '+Evaluation());
-
-						ShowEvalForUI = false;
-
-					break;
-
-				// ############################################################################################
-
 					case 'board':
 
 						sendMessage('board '+boardToFEN());
@@ -3761,11 +3558,17 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 				// ############################################################################################
 
+					case 'stop':
+
+						TimeStop = 1; // TODO: separate worker needed for NodeJS
+
+					break;
+
+				// ############################################################################################
+
 					case 'quit':
 
-						if (UI_HOST == HOST_NODEJS) { // Node.js
-							process.exit();
-						}
+						if (UI_HOST == HOST_NODEJS) process.exit();
 
 					break;
 
@@ -3790,12 +3593,18 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-	function evalStr(sc) {
-		var mg = (MG_SC(sc) / 100).toFixed(2).toString();
-		var eg = (EG_SC(sc) / 100).toFixed(2).toString();
-		for (var i = (16 - mg.length) / 2; i > 0; i--) mg = ' '+mg+' ';
-		for (var i = (16 - eg.length) / 2; i > 0; i--) eg = ' '+eg+' ';
-		return mg.substr(0, 16)+'|'+eg.substr(0, 16);
+	function GetGamePhase() {
+		return 24 - (
+			  brd_pieceCount[WHITE_KNIGHT] + brd_pieceCount[BLACK_KNIGHT]
+			+ brd_pieceCount[WHITE_BISHOP] + brd_pieceCount[BLACK_BISHOP]
+			+(brd_pieceCount[WHITE_ROOK  ] + brd_pieceCount[BLACK_ROOK  ]) * 2
+			+(brd_pieceCount[WHITE_QUEEN ] + brd_pieceCount[BLACK_QUEEN ]) * 4
+		);
+	}
+
+	function Interpolation(mg, eg, phase) {
+		phase = phase < 0 ? 0 : (phase << 8) / 24 + 0.5 | 0;
+		return ((mg * (256 - phase)) + (eg * phase)) >> 8;
 	}
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -3911,30 +3720,17 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 	// Babuk inicializalasa
 	function InitPieceList() {
 
-		brd_Material[0] = 0; // Feher anyag
-		brd_Material[8] = 0; // Fekete anyag
+		BitBoard.fill(0);
+		brd_Material.fill(0);
+		brd_pieceCount.fill(0);
+		brd_pieceIndex.fill(0);
+		brd_pieceList.fill(EMPTY);
 
-		for (var pce = 0; pce <= BLACK_KING; pce++) {
-
-			brd_pieceCount[pce] = 0; // Darabszam nullazas
-
-			BitBoard[pce << 1 | LOW]  = 0; // BitBoard nullazas
-			BitBoard[pce << 1 | HIGH] = 0;
-
-			for (var num = 0; num < 16; num++) { // Max 15 db azonos lehet (9 Vezer)
-				brd_pieceList[(pce << 4) | num] = EMPTY; // Mezo nullazas (64. mezo)
-			}
-		}
-
-		for (var sq = 0; sq < 64; sq++) {
-
-			brd_pieceIndex[sq] = 0; // Mezo index nullazas
-
-			if (CHESS_BOARD[sq] != 0)
-			{
+		for (var sq = 0; sq < 64; sq++)
+		{
+			if (CHESS_BOARD[sq] != 0) {
 				var piece = CHESS_BOARD[sq];
 				var color = CHESS_BOARD[sq] & 0x8;
-
 				ADDING_PCE(piece, sq, color); // Babu mentese!
 				ADDING_NN_PCE(piece, sq, color); // Hozzaadas!
 			}
@@ -4073,8 +3869,8 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		var Fen = (fenParam || START_FEN).split(' ');
 
-		for (var index = 0; index < Fen[0].length; index++) {
-
+		for (var index = 0; index < Fen[0].length; index++)
+		{
 			var value = Fen[0][index];
 			if (value === '/') {
 				continue;
@@ -4091,10 +3887,12 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 
 		if (fenParam) // only for testing..
 		{
-			return chessBoard;
+			return new Int8Array(chessBoard);
 		}
 
-		CHESS_BOARD = chessBoard.slice(0); // clone..
+		for (index = 0; index < chessBoard.length; index++) {
+			CHESS_BOARD[index] = chessBoard[index]; // copy..
+		}
 
 		CurrentPlayer = Fen[1] === 'w' ? WHITE : BLACK; // Kezdo!
 
@@ -4110,16 +3908,20 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 			}
 		}
 
-		if (Fen[3] == '-') { // Nincs En Passant
-			EN_PASSANT = 0;
-		} else {
-			EN_PASSANT = parseInt(SQUARES[Fen[3].toUpperCase()]);
+		InitChessNN(); // Halozat inicializalasa
+		InitPieceList(); // Babuk inicializalasa
+
+		EN_PASSANT = 0; // En Passant nullazas!
+
+		if (Fen[3] != '-') { // En Passant csak ha tamadja gyalog
+			var epSq = parseInt(SQUARES[Fen[3].toUpperCase()]);
+			if (CurrentPlayer ? DefendedByBPawn(epSq) : DefendedByWPawn(epSq)) {
+				EN_PASSANT = epSq;
+			}
 		}
 
 		brd_fiftyMove = Fen[4] != null ? Fen[4] : 0; // 50 lepes
 
-		InitChessNN(); // Halozat inicializalasa
-		InitPieceList(); // Babuk inicializalasa
 		GenerateHashKey(); // HashKey generalasa
 
 		return CHESS_BOARD;
@@ -4128,7 +3930,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 	// Sancolas
-	var CastlePerm = [
+	var CastlePerm = new Int8Array([
 	 11,  15,  15,  15,   3,  15,  15,   7,
 	 15,  15,  15,  15,  15,  15,  15,  15,
 	 15,  15,  15,  15,  15,  15,  15,  15,
@@ -4137,10 +3939,10 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 	 15,  15,  15,  15,  15,  15,  15,  15,
 	 15,  15,  15,  15,  15,  15,  15,  15,
 	 14,  15,  15,  15,  12,  15,  15,  13
-	];
+	]);
 
 	// Tukor tabla
-	var TableMirror = [
+	var TableMirror = new Int8Array([
 	 56,  57,  58,  59,  60,  61,  62,  63,
 	 48,  49,  50,  51,  52,  53,  54,  55,
 	 40,  41,  42,  43,  44,  45,  46,  47,
@@ -4149,10 +3951,10 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 	 16,  17,  18,  19,  20,  21,  22,  23,
 	  8,   9,  10,  11,  12,  13,  14,  15,
 	  0,   1,   2,   3,   4,   5,   6,   7
-	];
+	]);
 
 	// Oszlop tabla
-	var TableFiles = [
+	var TableFiles = new Int8Array([
 	  1,   2,   3,   4,   5,   6,   7,   8,
 	  1,   2,   3,   4,   5,   6,   7,   8,
 	  1,   2,   3,   4,   5,   6,   7,   8,
@@ -4161,10 +3963,10 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 	  1,   2,   3,   4,   5,   6,   7,   8,
 	  1,   2,   3,   4,   5,   6,   7,   8,
 	  1,   2,   3,   4,   5,   6,   7,   8
-	];
+	]);
 
 	// Sor tabla
-	var TableRanks = [
+	var TableRanks = new Int8Array([
 	  8,   8,   8,   8,   8,   8,   8,   8,
 	  7,   7,   7,   7,   7,   7,   7,   7,
 	  6,   6,   6,   6,   6,   6,   6,   6,
@@ -4173,10 +3975,10 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 	  3,   3,   3,   3,   3,   3,   3,   3,
 	  2,   2,   2,   2,   2,   2,   2,   2,
 	  1,   1,   1,   1,   1,   1,   1,   1
-	];
+	]);
 
 	// Huszar "orszem"
-	var KnightOutpost = [
+	var KnightOutpost = new Int32Array([
 	S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0),
 	S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0),
 	S(  0,   0), S(  0,   0), S(  4,   0), S(  5,   0), S(  5,   0), S(  4,   0), S(  0,   0), S(  0,   0),
@@ -4185,9 +3987,9 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 	S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0),
 	S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0),
 	S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0)
-	];
+	]);
 
-	var PawnPst = [
+	var PawnPst = new Int32Array([
 	S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0),
 	S( -8,   8), S( -1,  -2), S(  5, -13), S( 19,  -9), S( 19,  -9), S(  5, -13), S( -1,  -2), S( -8,   8),
 	S(  3,  15), S(  7,  11), S( 24,   2), S( 19,  -5), S( 19,  -5), S( 24,   2), S(  7,  11), S(  3,  15),
@@ -4196,9 +3998,9 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 	S(-13,  -3), S( -5,  -5), S(  4,  -3), S(  8,  -1), S(  8,  -1), S(  4,  -3), S( -5,  -5), S(-13,  -3),
 	S(-17,  -1), S(  5,  -3), S( -7,  10), S(  3,   6), S(  3,   6), S( -7,  10), S(  5,  -3), S(-17,  -1),
 	S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0)
-	];
+	]);
 
-	var KnightPst = [
+	var KnightPst = new Int32Array([
 	S(-161,-43), S(-62, -49), S(-63, -23), S(-15, -29), S(-15, -29), S(-63, -23), S(-62, -49), S(-161,-43),
 	S(-63, -33), S(-39, -15), S( -3, -23), S(-11, -10), S(-11, -10), S( -3, -23), S(-39, -15), S(-63, -33),
 	S(-23, -35), S( 19, -25), S( 16,  -3), S( 17,  -1), S( 17,  -1), S( 16,  -3), S( 19, -25), S(-23, -35),
@@ -4207,9 +4009,9 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 	S(-18, -25), S( -1, -22), S(  6, -16), S( 11,  -2), S( 11,  -2), S(  6, -16), S( -1, -22), S(-18, -25),
 	S(-21, -40), S(-21, -24), S( -4, -26), S( -1, -15), S( -1, -15), S( -4, -26), S(-21, -24), S(-21, -40),
 	S(-49, -38), S(-22, -38), S(-30, -24), S(-18, -19), S(-18, -19), S(-30, -24), S(-22, -38), S(-49, -38)
-	];
+	]);
 
-	var BishopPst = [
+	var BishopPst = new Int32Array([
 	S(-31, -16), S(-14, -15), S(-43, -11), S(-37,  -7), S(-37,  -7), S(-43, -11), S(-14, -15), S(-31, -16),
 	S(-43,  -5), S(-22,  -1), S(-25,   1), S(-21,  -6), S(-21,  -6), S(-25,   1), S(-22,  -1), S(-43,  -5),
 	S(  1,  -7), S( 11,  -6), S( 16,  -2), S( -5,  -1), S( -5,  -1), S( 16,  -2), S( 11,  -6), S(  1,  -7),
@@ -4218,9 +4020,9 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 	S(-10,  -7), S(  8,  -7), S( 12,  -1), S(  5,   6), S(  5,   6), S( 12,  -1), S(  8,  -7), S(-10,  -7),
 	S( -5, -15), S( 18, -16), S(  9, -11), S(  0,  -3), S(  0,  -3), S(  9, -11), S( 18, -16), S( -5, -15),
 	S(-22, -13), S( -6, -10), S( -8,  -7), S( -7,  -6), S( -7,  -6), S( -8,  -7), S( -6, -10), S(-22, -13)
-	];
+	]);
 
-	var RookPst = [
+	var RookPst = new Int32Array([
 	S( -6,  18), S(  4,  14), S(-10,  19), S(  6,  15), S(  6,  15), S(-10,  19), S(  4,  14), S( -6,  18),
 	S(-11,   8), S( -8,   8), S(  3,   6), S(  6,   1), S(  6,   1), S(  3,   6), S( -8,   8), S(-11,   8),
 	S( -8,  13), S( 10,  16), S(  4,  14), S( -1,  15), S( -1,  15), S(  4,  14), S( 10,  16), S( -8,  13),
@@ -4229,9 +4031,9 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 	S(-25,   2), S( -9,   5), S( -6,  -1), S( -4,  -1), S( -4,  -1), S( -6,  -1), S( -9,   5), S(-25,   2),
 	S(-27,   1), S( -4,  -7), S( -5,  -3), S(  4,  -5), S(  4,  -5), S( -5,  -3), S( -4,  -7), S(-27,   1),
 	S( -7,  -9), S( -3,  -5), S( -4,   1), S(  8,  -7), S(  8,  -7), S( -4,   1), S( -3,  -5), S( -7,  -9)
-	];
+	]);
 
-	var QueenPst = [
+	var QueenPst = new Int32Array([
 	S( -8, -18), S(  0,  -7), S(  4,   2), S(  8,   2), S(  8,   2), S(  4,   2), S(  0,  -7), S( -8, -18),
 	S( -1, -22), S(-26,  -8), S( -9,   2), S(-10,  19), S(-10,  19), S( -9,   2), S(-26,  -8), S( -1, -22),
 	S(  9, -17), S(  1,   0), S(  1,   9), S( -9,  28), S( -9,  28), S(  1,   9), S(  1,   0), S(  9, -17),
@@ -4240,9 +4042,9 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 	S(-12,  -4), S(  5, -12), S( -6,   8), S( -4,   4), S( -4,   4), S( -6,   8), S(  5, -12), S(-12,  -4),
 	S(-15, -24), S( -2, -29), S( 12, -22), S(  8, -10), S(  8, -10), S( 12, -22), S( -2, -29), S(-15, -24),
 	S( -8, -37), S( -7, -34), S( -4, -27), S(  7, -26), S(  7, -26), S( -4, -27), S( -7, -34), S( -8, -37)
-	];
+	]);
 
-	var KingPst = [
+	var KingPst = new Int32Array([
 	S(-48, -76), S( 10, -41), S(-19, -20), S(-64, -34), S(-64, -34), S(-19, -20), S( 10, -41), S(-48, -76),
 	S(-13, -26), S( -8, -13), S(-23,   5), S(-37,   3), S(-37,   3), S(-23,   5), S( -8, -13), S(-13, -26),
 	S(  1, -16), S( 14,   8), S( -3,  17), S(-49,  10), S(-49,  10), S( -3,  17), S( 14,   8), S(  1, -16),
@@ -4251,7 +4053,7 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 	S( 10, -28), S( 17, -10), S( -7,  -1), S(-31,   7), S(-31,   7), S( -7,  -1), S( 17, -10), S( 10, -28),
 	S( 43, -38), S( 38, -23), S(  5, -11), S(-13,  -5), S(-13,  -5), S(  5, -11), S( 38, -23), S( 43, -38),
 	S( 47, -73), S( 55, -47), S( 22, -35), S( 24, -42), S( 24, -42), S( 22, -35), S( 55, -47), S( 47, -73)
-	];
+	]);
 
 	// Extra
 	var BishopPair  = S( 48,  38);
@@ -4265,71 +4067,77 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 	var RookFullOpen = S( 27,   4);
 
 	// King Safety
-	var KingShield = new Array(5);
-	KingShield[0] = [ S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0) ];
-	KingShield[1] = [ S(  0,   0), S(  0,   0), S( 15,   0), S( 21,   0), S( 16,   0) ];
-	KingShield[2] = [ S(  0,   0), S(  0,   0), S( 30,   0), S( 26,   0), S(  1,   0) ];
-	KingShield[3] = [ S(  0,   0), S(  0,   0), S( 34,   0), S( -1,   0), S(  2,   0) ];
-	KingShield[4] = [ S(  0,   0), S(  0,   0), S( 12,   0), S(  8,   0), S( 10,   0) ];
+	var KingShield = new Int32Array([
+		S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0),
+		S(  0,   0), S(  0,   0), S( 15,   0), S( 21,   0), S( 16,   0),
+		S(  0,   0), S(  0,   0), S( 30,   0), S( 26,   0), S(  1,   0),
+		S(  0,   0), S(  0,   0), S( 34,   0), S( -1,   0), S(  2,   0),
+		S(  0,   0), S(  0,   0), S( 12,   0), S(  8,   0), S( 10,   0)
+	]);
 
-	var KingSafetyMull = [ S(  0,   0), S(  8,   0), S( 21,   0), S( 34,   0), S( 45,   0) ];
+	var KingSafetyMull = new Int32Array([ S(  0,   0), S(  8,   0), S( 21,   0), S( 34,   0), S( 45,   0) ]);
 
 	// Material
-	var DeltaValue = [ 0, 100, 343, 341, 518, 1005, 20000, 0, 0, 100, 343, 341, 518, 1005, 20000 ];
+	var DeltaValue = new Int32Array([ 0, 100, 343, 341, 518, 1005, 20000, 0, 0, 100, 343, 341, 518, 1005, 20000 ]);
 
-	var PieceValue = [ 0, S( 80,  87), S(343, 314), S(341, 322), S(481, 518), S(1005, 1005), S(20000, 20000),
-	                0, 0, S( 80,  87), S(343, 314), S(341, 322), S(481, 518), S(1005, 1005), S(20000, 20000) ];
+	var PieceValue = new Int32Array([
+		   0, S( 80,  87), S(343, 314), S(341, 322), S(481, 518), S(1005, 1005), S(20000, 20000),
+	    0, 0, S( 80,  87), S(343, 314), S(341, 322), S(481, 518), S(1005, 1005), S(20000, 20000)
+	]);
 
 	// Threats
-	var ThreatScore = new Array(7);
-	ThreatScore[0] = [ S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0) ];
-	ThreatScore[1] = [ S(  0,   0), S(  0,   0), S( 67,  22), S( 64,  45), S( 83,  10), S( 70,  14), S(  0,   0) ];
-	ThreatScore[2] = [ S(  0,   0), S(  0,   0), S(  0,   0), S( 35,  27), S( 64,  12), S( 54,  -9), S(  0,   0) ];
-	ThreatScore[3] = [ S(  0,   0), S(  0,   0), S( 18,  24), S(  0,   0), S( 50,  21), S( 68,  52), S(  0,   0) ];
-	ThreatScore[4] = [ S(  0,   0), S(  0,   0), S( 21,  23), S( 23,  31), S(  0,   0), S( 82,  22), S(  0,   0) ];
-	ThreatScore[5] = [ S(  0,   0), S(  0,   0), S(  6,  20), S(  3,  20), S( -2,  20), S(  0,   0), S(  0,   0) ];
-	ThreatScore[6] = [ S(  0,   0), S(  0,   0), S( 10,  29), S( 17,  29), S(  0,  32), S(  0,   0), S(  0,   0) ];
+	var ThreatScore = new Int32Array([
+		S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0),
+		S(  0,   0), S(  0,   0), S( 67,  22), S( 64,  45), S( 83,  10), S( 70,  14), S(  0,   0),
+		S(  0,   0), S(  0,   0), S(  0,   0), S( 35,  27), S( 64,  12), S( 54,  -9), S(  0,   0),
+		S(  0,   0), S(  0,   0), S( 18,  24), S(  0,   0), S( 50,  21), S( 68,  52), S(  0,   0),
+		S(  0,   0), S(  0,   0), S( 21,  23), S( 23,  31), S(  0,   0), S( 82,  22), S(  0,   0),
+		S(  0,   0), S(  0,   0), S(  6,  20), S(  3,  20), S( -2,  20), S(  0,   0), S(  0,   0),
+		S(  0,   0), S(  0,   0), S( 10,  29), S( 17,  29), S(  0,  32), S(  0,   0), S(  0,   0)
+	]);
 
 	// Passed Pawn
-	var PassedPawnBase = [ S(  0,   0), S(  0,   0), S( 10,  20), S( 10,  20), S(  9,  27), S( 23,  41), S( 43,  67), S( 78, 107) ];
-	var PassedHalfFree = [ S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S( -2,   3), S(  4,   5), S( 13,  14), S( 21,  34) ];
-	var PassedFullFree = [ S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(-23,  17), S( -9,  33), S( 41,  87), S( 62, 137) ];
+	var PassedDistanceOwn = new Int32Array([
+		S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  6,  27), S( 36,  59), S( 34,  93), S( 56, 107),
+		S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S( 17,  23), S( 36,  44), S( 53,  77), S( 49,  65),
+		S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  5,   8), S( 17,  13), S( 19,  16), S( 34,  39),
+		S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S( -9,  -4), S( -7,  -8), S( 10, -16), S( 18,  -5),
+		S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(-12, -16), S( -8, -22), S(-10, -30), S( -2, -33),
+		S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(-17, -14), S(-12, -26), S( -9, -36), S( -5, -38),
+		S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  9, -13), S(  5, -26), S( -7, -32), S(  5, -47),
+		S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(-13,  -6), S( -3, -26), S( 17, -32), S(  7, -46)
+	]);
 
-	var PassedDistanceOwn = new Array(7);
-	PassedDistanceOwn[0] = [ S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  6,  27), S( 36,  59), S( 34,  93), S( 56, 107) ];
-	PassedDistanceOwn[1] = [ S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S( 17,  23), S( 36,  44), S( 53,  77), S( 49,  65) ];
-	PassedDistanceOwn[2] = [ S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  5,   8), S( 17,  13), S( 19,  16), S( 34,  39) ];
-	PassedDistanceOwn[3] = [ S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S( -9,  -4), S( -7,  -8), S( 10, -16), S( 18,  -5) ];
-	PassedDistanceOwn[4] = [ S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(-12, -16), S( -8, -22), S(-10, -30), S( -2, -33) ];
-	PassedDistanceOwn[5] = [ S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(-17, -14), S(-12, -26), S( -9, -36), S( -5, -38) ];
-	PassedDistanceOwn[6] = [ S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(  9, -13), S(  5, -26), S( -7, -32), S(  5, -47) ];
-	PassedDistanceOwn[7] = [ S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(-13,  -6), S( -3, -26), S( 17, -32), S(  7, -46) ];
+	var PassedDistanceThem = new Int32Array([
+		S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(-18, -30), S(  2, -35), S(  9, -54), S(  2, -64),
+		S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S( -4, -11), S( 12, -23), S( 15, -42), S(  9, -59),
+		S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S( 14,  -9), S(  8, -13), S( 18, -18), S( 15, -12),
+		S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S( -6,   2), S(-16,  18), S(-15,  50), S( 15,  85),
+		S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(-18,  15), S(-12,  39), S(-19,  82), S( -2, 113),
+		S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(-14,  23), S(-13,  50), S(-11,  86), S( 13, 115),
+		S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S( -2,  26), S( -3,  54), S( -6,  86), S(  3, 124),
+		S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(-17,  24), S( -8,  50), S( -8,  80), S(-23, 111)
+	]);
 
-	var PassedDistanceThem = new Array(7);
-	PassedDistanceThem[0] = [ S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(-18, -30), S(  2, -35), S(  9, -54), S(  2, -64) ];
-	PassedDistanceThem[1] = [ S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S( -4, -11), S( 12, -23), S( 15, -42), S(  9, -59) ];
-	PassedDistanceThem[2] = [ S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S( 14,  -9), S(  8, -13), S( 18, -18), S( 15, -12) ];
-	PassedDistanceThem[3] = [ S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S( -6,   2), S(-16,  18), S(-15,  50), S( 15,  85) ];
-	PassedDistanceThem[4] = [ S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(-18,  15), S(-12,  39), S(-19,  82), S( -2, 113) ];
-	PassedDistanceThem[5] = [ S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(-14,  23), S(-13,  50), S(-11,  86), S( 13, 115) ];
-	PassedDistanceThem[6] = [ S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S( -2,  26), S( -3,  54), S( -6,  86), S(  3, 124) ];
-	PassedDistanceThem[7] = [ S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(-17,  24), S( -8,  50), S( -8,  80), S(-23, 111) ];
+	var PassedPawnBase = new Int32Array([ S(  0,   0), S(  0,   0), S( 10,  20), S( 10,  20), S(  9,  27), S( 23,  41), S( 43,  67), S( 78, 107) ]);
+	var PassedHalfFree = new Int32Array([ S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S( -2,   3), S(  4,   5), S( 13,  14), S( 21,  34) ]);
+	var PassedFullFree = new Int32Array([ S(  0,   0), S(  0,   0), S(  0,   0), S(  0,   0), S(-23,  17), S( -9,  33), S( 41,  87), S( 62, 137) ]);
 
 	// Pawn Evals
-	var PawnDoubled       = [ S(  0,   0), S(  0,   0), S(-10, -20), S(-19, -11), S( -4, -15), S(-12, -11), S( 23, -16), S(-10, -20) ];
-	var PawnDoubledOpen   = [ S(  0,   0), S(  0,   0), S(-10, -20), S( -4, -25), S(  6, -19), S( -3,  -7), S(  3,  -3), S(  8,  -2) ];
-	var PawnIsolated      = [ S(  0,   0), S(  0,   0), S(-10,  -9), S(-13, -12), S( -6, -13), S( -6, -17), S( -2, -10), S(-10, -20) ];
-	var PawnIsolatedOpen  = [ S(  0,   0), S(  0,   0), S(-25, -16), S(-28, -18), S(-25, -14), S(-13, -19), S( -6, -26), S(-18, -33) ];
-	var PawnBackward      = [ S(  0,   0), S(  0,   0), S( -6,  -4), S( -3, -10), S(-11, -15), S( -7, -17), S(  0,  -6), S( -8, -10) ];
-	var PawnBackwardOpen  = [ S(  0,   0), S(  0,   0), S(-16, -14), S(-25, -11), S(-23,  -6), S( -8,  -8), S( -8, -18), S(-19, -20) ];
-	var PawnConnected     = [ S(  0,   0), S(  0,   0), S(  2,  -2), S(  6,  -1), S( 10,  -4), S( 15,   2), S( 21,  40), S(  0,   0) ];
-	var PawnConnectedOpen = [ S(  0,   0), S(  0,   0), S(  2, -10), S(  7,  -5), S( 14,   4), S( 20,  17), S( 34,  44), S( 66,  45) ];
+	var PawnDoubled       = new Int32Array([ S(  0,   0), S(  0,   0), S(-10, -20), S(-19, -11), S( -4, -15), S(-12, -11), S( 23, -16), S(-10, -20) ]);
+	var PawnDoubledOpen   = new Int32Array([ S(  0,   0), S(  0,   0), S(-10, -20), S( -4, -25), S(  6, -19), S( -3,  -7), S(  3,  -3), S(  8,  -2) ]);
+	var PawnIsolated      = new Int32Array([ S(  0,   0), S(  0,   0), S(-10,  -9), S(-13, -12), S( -6, -13), S( -6, -17), S( -2, -10), S(-10, -20) ]);
+	var PawnIsolatedOpen  = new Int32Array([ S(  0,   0), S(  0,   0), S(-25, -16), S(-28, -18), S(-25, -14), S(-13, -19), S( -6, -26), S(-18, -33) ]);
+	var PawnBackward      = new Int32Array([ S(  0,   0), S(  0,   0), S( -6,  -4), S( -3, -10), S(-11, -15), S( -7, -17), S(  0,  -6), S( -8, -10) ]);
+	var PawnBackwardOpen  = new Int32Array([ S(  0,   0), S(  0,   0), S(-16, -14), S(-25, -11), S(-23,  -6), S( -8,  -8), S( -8, -18), S(-19, -20) ]);
+	var PawnConnected     = new Int32Array([ S(  0,   0), S(  0,   0), S(  2,  -2), S(  6,  -1), S( 10,  -4), S( 15,   2), S( 21,  40), S(  0,   0) ]);
+	var PawnConnectedOpen = new Int32Array([ S(  0,   0), S(  0,   0), S(  2, -10), S(  7,  -5), S( 14,   4), S( 20,  17), S( 34,  44), S( 66,  45) ]);
 
 	// Mobility
-	var KnightMob = [ S(-27, -83), S(-16, -38), S( -6, -18), S( -4,  -6), S(  5,  -5), S( 10,   5), S( 16,   2), S( 22,   2), S( 33,  -6) ];
-	var BishopMob = [ S(-42, -53), S(-30, -48), S(-14, -28), S(-11, -13), S( -3,  -4), S(  4,   1), S(  7,   5), S(  8,   6), S( 11,  10), S( 11,   9), S( 15,   3), S( 33,   5), S( 17,  12), S( 31,   6) ];
-	var RookMob   = [ S(-42, -88), S(-19, -50), S(-13, -27), S(-13, -15), S(-12,  -8), S( -8,   0), S( -6,   6), S(  0,   9), S(  3,  11), S(  9,  14), S(  9,  19), S( 14,  21), S( 18,  20), S( 18,  22), S( 16,  23) ];
-	var QueenMob  = [ S(-200, -26), S(-19, -166), S(-22, -104), S(-19, -54), S(-18, -63), S(-17, -53), S(-11, -51), S( -7, -43), S( -5, -24), S( -2, -20), S( -2,  -9), S(  0,  -5), S(  2,  -2), S(  5,   5), S(  7,   7), S(  5,  14), S(  5,  19), S(  8,  15), S( 13,  24), S( 20,  24), S( 22,  25), S( 22,  31), S( 32,  24), S( 28,  31), S( 29,  26), S( 23,  24), S(  5,  21), S( 27,  22) ];
+	var KnightMob = new Int32Array([ S(-27, -83), S(-16, -38), S( -6, -18), S( -4,  -6), S(  5,  -5), S( 10,   5), S( 16,   2), S( 22,   2), S( 33,  -6) ]);
+	var BishopMob = new Int32Array([ S(-42, -53), S(-30, -48), S(-14, -28), S(-11, -13), S( -3,  -4), S(  4,   1), S(  7,   5), S(  8,   6), S( 11,  10), S( 11,   9), S( 15,   3), S( 33,   5), S( 17,  12), S( 31,   6) ]);
+	var RookMob   = new Int32Array([ S(-42, -88), S(-19, -50), S(-13, -27), S(-13, -15), S(-12,  -8), S( -8,   0), S( -6,   6), S(  0,   9), S(  3,  11), S(  9,  14), S(  9,  19), S( 14,  21), S( 18,  20), S( 18,  22), S( 16,  23) ]);
+	var QueenMob  = new Int32Array([ S(-200, -26), S(-19, -166), S(-22, -104), S(-19, -54), S(-18, -63), S(-17, -53), S(-11, -51), S( -7, -43), S( -5, -24), S( -2, -20), S( -2,  -9), S(  0,  -5), S(  2,  -2), S(  5,   5), S(  7,   7), S(  5,  14), S(  5,  19), S(  8,  15), S( 13,  24), S( 20,  24), S( 22,  25), S( 22,  31), S( 32,  24), S( 28,  31), S( 29,  26), S( 23,  24), S(  5,  21), S( 27,  22) ]);
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 // Chess Neural Network by Tamas Kuzmics
@@ -4338,12 +4146,13 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 	var INPUT_NEURONS     = 768;
 	var HIDDEN_NEURONS    = 16;
 	var OUTPUT_NEURONS    = 1;
-	var NN_HIDDEN_LAYER   = new Array(HIDDEN_NEURONS);
-	var NN_OUTPUT_LAYER   = new Array(OUTPUT_NEURONS);
-	var NN_HIDDEN_BIASES  = new Array(HIDDEN_NEURONS);
-	var NN_OUTPUT_BIASES  = new Array(OUTPUT_NEURONS);
-	var NN_HIDDEN_WEIGHTS = new Array(HIDDEN_NEURONS * INPUT_NEURONS);
-	var NN_OUTPUT_WEIGHTS = new Array(OUTPUT_NEURONS * HIDDEN_NEURONS);
+	var HIDDEN_HISTORY    = new Float64Array(HIDDEN_NEURONS * 1024); // Maxmoves
+	var NN_HIDDEN_LAYER   = new Float64Array(HIDDEN_NEURONS);
+	var NN_OUTPUT_LAYER   = new Float64Array(OUTPUT_NEURONS);
+	var NN_HIDDEN_BIASES  = new Float64Array(HIDDEN_NEURONS);
+	var NN_OUTPUT_BIASES  = new Float64Array(OUTPUT_NEURONS);
+	var NN_HIDDEN_WEIGHTS = new Float64Array(HIDDEN_NEURONS * INPUT_NEURONS);
+	var NN_OUTPUT_WEIGHTS = new Float64Array(OUTPUT_NEURONS * HIDDEN_NEURONS);
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -4397,7 +4206,9 @@ var CHESS_BOARD     = [ BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLA
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 	function InitChessNN() {
-		NN_HIDDEN_LAYER = NN_HIDDEN_BIASES.slice(0); // biases
+		for (var neuron = 0; neuron < HIDDEN_NEURONS; neuron++) {
+			NN_HIDDEN_LAYER[neuron] = NN_HIDDEN_BIASES[neuron];
+		}
 	}
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

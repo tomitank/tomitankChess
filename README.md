@@ -25,7 +25,7 @@ Usage:
 
 Estimated level (CCRL 40/40):
 -----------------------------
-- 6.0: ~3000 elo /2026.03.20/
+- 6.0: ~3000 elo /2026.03.31/
 - 5.3: same as 5.1 only the uci code changed
 - 5.1: ~2920 elo (Strongest JavaScript Chess Engine /2021.08.08/)
 - 5.0: ~2900 elo (Strongest JavaScript Chess Engine /2021.01.18/)
@@ -60,14 +60,15 @@ Changes log:
   + fix memory overflow after "ucinewgame" command (don't realloc tt table)
   + fix "forfeits on time" in short time control (substract 50ms for lag)
   + revisited and refactored code (would be better rewrite from scratch..)
-  + bit better draw detection
   + fix en-passant hash key update -> only when sq attacked by opponent
   + main eval is not changed (boring for me), still use HCE + small NN
   + 60% faster NPS, so tomitankChess play full of strength with same eval
-  + around 50 elo better than previous version
+  + bit better draw detection
   + Known issues:
   + Fifty-move repetition may incorrectly ignore mate positions
   + Stop and quit commands are ignored in the Node.js environment
+  + Future improvements aka TODOs: better time management
+  + Estimated strength: Senpai 1.0 (around 3000 elo)
 
 - v5.3
   + add root moves result instead of multiPv for analysis
