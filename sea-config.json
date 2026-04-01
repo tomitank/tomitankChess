@@ -1,0 +1,6 @@
+{
+  "main": "tomitankChess.js",
+  "output": "tomitankChess.blob",
+  "useCodeCache": false,
+  "disableExperimentalSEAWarning": true
+}

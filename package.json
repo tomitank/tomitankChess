@@ -1,0 +1,9 @@
+{
+  "name": "tomitank-chess",
+  "scripts": {
+    "build": "build.bat"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}

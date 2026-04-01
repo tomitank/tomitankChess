@@ -9,6 +9,9 @@ Usage:
 -----------------------------
 - tomitankChess (with node.js) run in Arena, in WinBoard and in Cutechess as well.
 
+- tomitankChess.exe was built with Node v22.17.1
+  + For other platforms or Node versions, see the instructions below.
+
 - Example for Arena GUI with node.js
   + Command line: direct acces to node.exe (C:\Program Files\nodejs\node.exe)
   + Command line parameters: direct acces to tomitankChess.js (C:\Program Files\nodejs\tomitankChessUCI.js)
