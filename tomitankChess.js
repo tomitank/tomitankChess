@@ -832,7 +832,7 @@ var CHESS_BOARD = new Int8Array([
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 	function ProbeHash() { // Hash kiolvasas
-		return NOMOVE;
+
 		var index = brd_hashKeyLow & HASHMASK;
 
 		for (var entry = index; entry < index + 4; entry++)
