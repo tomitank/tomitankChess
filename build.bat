@@ -5,8 +5,11 @@ for /f "delims=" %%v in ('node -v') do set NODE_VERSION=%%v
 
 REM remove 'v' from version string
 set NODE_VERSION=%NODE_VERSION:v=%
+for /f "tokens=1 delims=." %%a in ("%NODE_VERSION%") do set NODE_MAJOR=%%a
 echo Node version: %NODE_VERSION%
-set EXE_NAME=tomitankChess_60_x64_node%NODE_VERSION%.exe
+echo Major version: %NODE_MAJOR%
+
+set EXE_NAME=tomitankChess_60_x64_node%NODE_MAJOR%.exe
 
 REM 1. SEA blob build
 node --experimental-sea-config sea-config.json
