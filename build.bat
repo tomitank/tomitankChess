@@ -9,7 +9,7 @@ for /f "tokens=1 delims=." %%a in ("%NODE_VERSION%") do set NODE_MAJOR=%%a
 echo Node version: %NODE_VERSION%
 echo Major version: %NODE_MAJOR%
 
-set EXE_NAME=tomitankChess_60_x64_node%NODE_MAJOR%.exe
+set EXE_NAME=tomitankChess_60_x64_node%NODE_MAJOR%_false.exe
 
 REM 1. SEA blob build
 node --experimental-sea-config sea-config.json
