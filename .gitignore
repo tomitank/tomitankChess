@@ -1,4 +1,3 @@
 .DS_Store
-.husky/
 node_modules/
 package-lock.json
