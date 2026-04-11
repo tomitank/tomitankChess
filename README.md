@@ -28,7 +28,7 @@ Usage:
 
 Estimated level (CCRL 40/40):
 -----------------------------
-- 6.0: ~3000 elo /2026.03.31/
+- 6.0: ~3020 elo /2026.03.31/
 - 5.3: same as 5.1 only the uci code changed
 - 5.1: ~2920 elo (Strongest JavaScript Chess Engine /2021.08.08/)
 - 5.0: ~2900 elo (Strongest JavaScript Chess Engine /2021.01.18/)
@@ -40,6 +40,7 @@ Estimated level (CCRL 40/40):
 - 1.5: ~2590 elo (Strongest JavaScript Chess Engine /2017.12.03/)
 - 1.4: ~2550 elo (Strongest JavaScript Chess Engine /2017.09.30/)
 - [Click here to see all CCRL 40/40 results of tomitankChess](https://computerchess.org.uk/ccrl/4040/cgi/compare_engines.cgi?family=tomitankChess&print=Rating+list&print=Results+table&print=LOS+table&print=Ponder+hit+table&print=Eval+difference+table&print=Comopp+gamenum+table&print=Overlap+table&print=Score+with+common+opponents)
+- [Click here to see all CCRL 40/4 results of tomitankChess](https://computerchess.org.uk/404/cgi/compare_engines.cgi?family=tomitankChess&print=Rating+list&print=Results+table&print=LOS+table&print=Ponder+hit+table&print=Eval+difference+table&print=Comopp+gamenum+table&print=Overlap+table&print=Score+with+common+opponents)
 
 Links:
 -----------------------------
