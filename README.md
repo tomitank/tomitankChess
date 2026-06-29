@@ -28,6 +28,7 @@ Usage:
 
 Estimated level (CCRL 40/40):
 -----------------------------
+- 7.0: ~3070 elo /2026.06.28/
 - 6.0: ~3020 elo /2026.03.31/
 - 5.3: same as 5.1 only the uci code changed
 - 5.1: ~2920 elo (Strongest JavaScript Chess Engine /2021.08.08/)
@@ -54,6 +55,20 @@ Have fun with tomitankChess!
 
 Changes log:
 -----------------------------
+- v7.0
+  + Focused on reducing memory lookups (arrays/functions), which are costly in JavaScript
+  + Replaced Rank/File/Mirror arrays with bit manipulation
+  + Switched to direct indexing instead of function calls on BitBoard array
+  + Bit faster NN index (~2% NPS gain). In this workload, optimized JS performs similarly to WASM SIMD, making SIMD unnecessary complexity
+  + TT optimizations: improved replacement scheme, faster access, fewer lookups
+  + Added a custom symmetry-safe evaluation cache (~5% NPS gain even with the main TT enabled)
+  + Optimized pawn eval, capture eval, and NN updates
+  + Added plain magic bitboards (~9% NPS gain)
+  + Minor time-management improvements
+  + Overall NPS gain: ~20% (compared to 6.0)
+  + Same eval (HCE + small NN), retrained with a better trainer
+  + Estimated strength: near to Senpai 2.0 (around 3070 elo)
+
 - v6.0
   + use Math.clz32 when available
   + own native popcount64 wasm code when wasm is supported
